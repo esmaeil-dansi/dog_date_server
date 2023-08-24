@@ -1,0 +1,4 @@
+MINIO_ACCESS_KEY="dogapp"
+MINIO_VOLUMES="/usr/local/share/minio/"
+MINIO_OPTS="-C /etc/minio --address 85.214.33.87:9000"
+MINIO_SECRET_KEY="96112049"
