@@ -44,6 +44,21 @@ class FileController {
     }
 
 
+    @GetMapping("getFile/{uuid}")
+    @ResponseBody
+    fun getFile(@PathVariable(value = "uuid") uuid: String): ResponseEntity<Resource>? {
+        try {
+            val file = minioService.getFile(uuid, bucket = MESSAGE)
+            if (file != null) {
+                return ResponseEntity.ok().contentLength(file.length())
+                    .body(InputStreamResource(FileInputStream(file)))
+            }
+        } catch (e: Exception) {
+            logger.error(e.message)
+        }
+        return null
+    }
+
     @GetMapping("downloadAvatar/{uuid}")
     @ResponseBody
     fun downloadAvatar(@PathVariable(value = "uuid") uuid: String): ResponseEntity<Resource>? {
@@ -80,12 +95,10 @@ class FileController {
     @ResponseBody
     fun uploadFileMessage(
         @RequestPart("file") file: MultipartFile,
-        @PathVariable(value = "fileUuid") fileUuid: String
     ): ResponseEntity<String>? {
         return try {
             val uuid = UUID.randomUUID().toString() + "_" + file.originalFilename
             minioService.saveFile(file.bytes, uuid, bucket = MESSAGE)
-            fileInfoRepo.save(FileInfo(uuid = uuid, packetId = fileUuid, name = file.originalFilename!!))
             ResponseEntity.ok().body(uuid)
         } catch (e: Exception) {
             logger.error(e.message);

@@ -22,9 +22,7 @@ import java.util.*
 
 @RestController
 class MainController(
-    private val messageService: MessageService,
     private val userService: UserService,
-    private val messageRepo: MessageRepo,
     private val chatRepo: ChatRepo
 ) {
 
@@ -55,18 +53,6 @@ class MainController(
     @Autowired
     private lateinit var emailService: EmailService
 
-    @MessageMapping("/private-message")
-    fun receivePrivateMessage(@Payload clientPacket: ClientPacket) {
-        logger.info("new private message........")
-        if (clientPacket.message != null) {
-            messageService.proxyMessage(message = clientPacket.message)
-        } else if (clientPacket.seen != null) {
-            messageService.processSeen(seen = clientPacket.seen)
-        } else if (clientPacket.comment != null) {
-            messageService.processComment(comment = clientPacket.comment)
-        }
-
-    }
 
     @PostMapping(path = ["/singingByPhoneNumber"])
     @ResponseBody
@@ -279,22 +265,25 @@ class MainController(
 
     @GetMapping(path = ["/fetchPost/{lastPostId}"])
     fun fetchPost(@PathVariable("lastPostId") lastPostId: Int): List<PostRes> {
-        val posts = postRepo.findAll()
+        val posts = postRepo.findByIdGreaterThanOrderByIdDesc(lastPostId.toLong())
         val postResList: MutableList<PostRes> = ArrayList()
-        for (post in posts) {
-            val postRes = PostRes()
-            postRes.description = post.description
-            postRes.id = post.id
-            postRes.title = post.title
-            postRes.time = post.time
-            postRes.ownerId = post.ownerId
-            postRes.type = post.type
-            val info = fileInfoRepo.getByPacketId(post.fileUuid)
-            if (info != null) {
-                postRes.fileUuids = info.map { f -> f.uuid }
+        if (posts != null) {
+            for (post in posts) {
+                val postRes = PostRes()
+                postRes.description = post.description
+                postRes.id = post.id
+                postRes.title = post.title
+                postRes.time = post.time
+                postRes.ownerId = post.ownerId
+                postRes.type = post.type
+                val info = fileInfoRepo.getByPacketId(post.fileUuid)
+                if (info != null) {
+                    postRes.fileUuids = info.map { f -> f.uuid }
+                }
+                postResList.add(postRes)
             }
-            postResList.add(postRes)
         }
+
         return postResList
     }
 
@@ -312,23 +301,5 @@ class MainController(
     fun getDoctor(@PathVariable("doctorId") pointer: Int?): User {
         return User()
         //        return userRepo.getUserByUuid(userUid);
-    }
-
-    @GetMapping(path = ["/getUser/{userUid}"])
-    fun getUser(@PathVariable("userUid") userUid: String): User? {
-        return userRepo.getUserByUuid(userUid)
-    }
-
-    @PostMapping(path = ["/saveAnimal"]) //
-    @ResponseBody
-    fun saveAnimal(@RequestBody body: String): String {
-        val user = User()
-        user.firstname = "name"
-        val location = Location()
-        location.lag = java.lang.Long.getLong("111")
-        location.lat = java.lang.Long.getLong("222")
-        user.location = location
-        userRepo.save(user)
-        return "Saved"
     }
 }
