@@ -9,6 +9,9 @@ class Doctor(
     var ownerId: String = "",
     var rate: Int = 0,
     var info: String = "",
-    var description: String = ""
+    var description: String = "",
+    var name: String = "",
+    var avatarInfo: String = "",
+    var location: Location = Location()
 
 )

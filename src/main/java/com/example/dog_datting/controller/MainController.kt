@@ -6,16 +6,11 @@ import com.example.dog_datting.dto.*
 import com.example.dog_datting.models.*
 import com.example.dog_datting.repo.*
 import com.example.dog_datting.services.EmailService
-import com.example.dog_datting.services.MessageService
 import com.example.dog_datting.services.UserService
-import com.google.gson.Gson
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
-import org.json.JSONObject
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.ResponseEntity
-import org.springframework.messaging.handler.annotation.MessageMapping
-import org.springframework.messaging.handler.annotation.Payload
 import org.springframework.web.bind.annotation.*
 import java.util.*
 
@@ -30,6 +25,9 @@ class MainController(
 
     @Autowired
     private lateinit var userRepo: UserRepo
+
+    @Autowired
+    private lateinit var commentRepo: CommentRepo
 
     @Autowired
     private lateinit var locationRepo: LocationRepo
@@ -49,9 +47,11 @@ class MainController(
     @Autowired
     private lateinit var fileInfoRepo: FileInfoRepo
 
-
     @Autowired
     private lateinit var emailService: EmailService
+
+    @Autowired
+    private lateinit var storyRepo: StoryRepo
 
 
     @PostMapping(path = ["/singingByPhoneNumber"])
@@ -117,6 +117,7 @@ class MainController(
         if (user != null) {
             val recoverCode = kotlin.random.Random.nextInt(10000, 99999)
             user.recoveryCode = recoverCode
+            userRepo.save(user)
             emailService.sendVerifyCodeEmail(email = email, code = recoverCode.toString())
             return ResponseEntity.ok().build()
         }
@@ -163,14 +164,13 @@ class MainController(
         return ResponseEntity.internalServerError().build()
     }
 
-    @PostMapping(path = ["/login"]) //
+    @PostMapping(path = ["/login"])
     @ResponseBody
     fun login(@RequestBody loginDto: LoginDto): ResponseEntity<String> {
         try {
             var user: User? = null
             if (loginDto.email.isNotEmpty()) {
                 user = userRepo.getUserByEmail(loginDto.email)
-
             }
             return if (user != null) {
                 if (user.password == loginDto.password) {
@@ -178,7 +178,6 @@ class MainController(
                 } else {
                     ResponseEntity.badRequest().body("NOT_MATCH")
                 }
-
             } else {
                 ResponseEntity.notFound().build()
             }
@@ -190,29 +189,18 @@ class MainController(
     }
 
 
-    @PostMapping(path = ["/saveShop"]) //
-    @ResponseBody
-    fun saveShop(@RequestBody body: String?): String {
-        val gson = Gson() // Or use new GsonBuilder().create();
-        val target2 = gson.fromJson(body, Post::class.java)
-        val user = User()
-        //        user.setFirstname(name);
-//        n.setLastname(email);
-//        userRepo.save(n);
-        return "Saved"
-    }
-
-
     @PostMapping(path = ["/savePost"]) //
     @ResponseBody
     fun savePost(@RequestBody newPostDao: NewPostDao): ResponseEntity<SavePostRes?> {
         try {
-            var time: Long = System.currentTimeMillis();
+            val location = locationRepo.save(Location(lan = newPostDao.location.lan, lat = newPostDao.location.lat))
+            val time: Long = System.currentTimeMillis();
             val post = Post()
             post.description = newPostDao.description
             post.type = getPostType(newPostDao.type)
             post.title = newPostDao.title
             post.ownerId = newPostDao.ownerId
+            post.location = location
             post.fileUuid = newPostDao.fileUuid
             post.time = time
             val id = postRepo.save(post)
@@ -236,6 +224,17 @@ class MainController(
         return PostType.SALE
     }
 
+    @GetMapping("fetchDoctors/{lastId}")
+    @ResponseBody
+    fun fetchDoctors(@PathVariable(value = "lastId") lastId: String): List<Doctor>? {
+        try {
+            return doctorRepo.findAll()
+        } catch (e: Exception) {
+            print(e.message)
+        }
+        return null
+    }
+
     @GetMapping("fetchChats/{uuid}")
     @ResponseBody
     fun fetchChat(@PathVariable(value = "uuid") uuid: String): List<ChatResult>? {
@@ -254,8 +253,6 @@ class MainController(
                 }
             }
             return res;
-
-
         } catch (e: Exception) {
             print(e.message)
         }
@@ -276,6 +273,8 @@ class MainController(
                 postRes.time = post.time
                 postRes.ownerId = post.ownerId
                 postRes.type = post.type
+                postRes.location =
+                    com.example.dog_datting.models.Location(lat = post.location.lat, lan = post.location.lan)
                 val info = fileInfoRepo.getByPacketId(post.fileUuid)
                 if (info != null) {
                     postRes.fileUuids = info.map { f -> f.uuid }
@@ -287,19 +286,98 @@ class MainController(
         return postResList
     }
 
-    @PostMapping(path = ["/saveDoctor"]) //
-    @ResponseBody
-    fun saveDoctor(@RequestBody body: String?): String {
-        val user = User()
-        //        user.setFirstname(name);
-//        n.setLastname(email);
-//        userRepo.save(n);
-        return "Saved"
+    @GetMapping(path = ["/fetchComments/{postId}"])
+    fun fetchComments(@PathVariable("postId") postId: Int): List<Comment>? {
+        try {
+            return commentRepo.getCommentsByPostIdByOrderByTimeDesc(postId = postId.toString())
+        } catch (e: Exception) {
+            logger.error(e.message)
+        }
+        return null
+
     }
 
-    @GetMapping(path = ["/getDoctor/{doctorId}"])
-    fun getDoctor(@PathVariable("doctorId") pointer: Int?): User {
-        return User()
-        //        return userRepo.getUserByUuid(userUid);
+    @PostMapping(path = ["/saveDoctor"])
+    @ResponseBody
+    fun saveDoctor(@RequestBody doctorDto: DoctorDto): ResponseEntity<String?> {
+        try {
+            val location = locationRepo.save(Location(lat = doctorDto.location.lat, lan = doctorDto.location.lat))
+            doctorRepo.save(
+                Doctor(
+                    ownerId = doctorDto.ownerId,
+                    name = doctorDto.name,
+                    description = doctorDto.description,
+                    avatarInfo = doctorDto.avatarInfo,
+                    location = location
+                )
+            )
+            return ResponseEntity.ok().build();
+
+        } catch (e: Exception) {
+            logger.error(e.message)
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @PostMapping(path = ["/deletePost"])
+    @ResponseBody
+    fun deletePost(@RequestBody id: Int): ResponseEntity<String?> {
+        return try {
+            postRepo.deleteById(id)
+            ResponseEntity.ok().build();
+        } catch (e: Exception) {
+            logger.error(e.message)
+            ResponseEntity.internalServerError().build();
+        }
+    }
+
+
+    @PostMapping(path = ["/rateDoctor"])
+    @ResponseBody
+    fun rateDoctor(@RequestBody rateDoctorDto: RateDoctorDto): ResponseEntity<String?> {
+        return try {
+            val doctor = doctorRepo.findById(rateDoctorDto.ownerId)
+            if (doctor.isPresent) {
+                val d: Doctor = doctor.get();
+                d.rate = rateDoctorDto.rate
+                doctorRepo.save(d)
+            }
+            ResponseEntity.ok().build();
+        } catch (e: Exception) {
+            logger.error(e.message)
+            ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @PostMapping(path = ["/saveStory"])
+    @ResponseBody
+    fun saveStory(@RequestBody storyDto: StoryDto): ResponseEntity<String>? {
+        return try {
+            storyRepo.save(
+                Story(
+                    userId = storyDto.userId,
+                    fileInfo = storyDto.fileInfo,
+                    description = storyDto.description,
+                    time = storyDto.time
+                )
+            )
+            return ResponseEntity.ok().build()
+
+        } catch (e: Exception) {
+            logger.error(e.message)
+            ResponseEntity.internalServerError().build();
+        }
+
+    }
+
+    @GetMapping(path = ["/fetchStory/{userId}"])
+    @ResponseBody
+    fun fetchStory(@PathVariable(value = "userId") userId: String): Story? {
+        try {
+            return storyRepo.findById(userId).get()
+        } catch (e: Exception) {
+            logger.error(e.message)
+        }
+        return null
     }
 }

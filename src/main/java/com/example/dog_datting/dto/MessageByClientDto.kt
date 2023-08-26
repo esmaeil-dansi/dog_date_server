@@ -1,6 +1,6 @@
 package com.example.dog_datting.dto
 
-import java.lang.ClassCastException
+import com.example.dog_datting.models.Location
 
 
 data class MessageByClientDto(
@@ -55,8 +55,7 @@ data class Packet(
     val message: Message? = null,
     val seen: Seen? = null,
     val ack: Ack? = null,
-
-    )
+)
 
 
 data class NewPostDao(
@@ -64,7 +63,8 @@ data class NewPostDao(
     val ownerId: String,
     val description: String,
     val type: String,
-    val title: String
+    val title: String,
+    val location: Location = Location()
 
 )
 

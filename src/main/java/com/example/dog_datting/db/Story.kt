@@ -4,11 +4,11 @@ import javax.persistence.Entity
 import javax.persistence.GeneratedValue
 import javax.persistence.Id
 
+
 @Entity
-data class Location(
-    @Id
-    @GeneratedValue
-    val id: Long = 0,
-    var lat: Double = 0.0,
-    var lan: Double = 0.0
+data class Story(
+    @Id var userId: String = "",
+    var fileInfo: String = "",
+    var time: Long = 0,
+    var description: String = ""
 )

@@ -7,5 +7,6 @@ data class PostRes(
     var time: Long = 0,
     var description: String = "",
     var type: PostType = PostType.BAY,
-    var fileUuids: List<String> = ArrayList()
+    var fileUuids: List<String> = ArrayList(),
+    var location: Location = Location()
 )

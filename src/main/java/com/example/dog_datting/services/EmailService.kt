@@ -22,13 +22,9 @@ class EmailService {
             mailMessage.from = sender
             mailMessage.setTo(email)
             mailMessage.text = code
-            mailMessage.subject = "dog dating"
-
-            // Sending the mail
+            mailMessage.subject = "login code"
             javaMailSender.send(mailMessage)
-
-        } // Catch block to handle the exceptions
-        catch (e: Exception) {
+        } catch (e: Exception) {
             print(e.message)
         }
     }
@@ -40,13 +36,9 @@ class EmailService {
             mailMessage.from = sender
             mailMessage.setTo(email)
             mailMessage.text = code
-            mailMessage.subject = "dog dating recovery code"
-
-            // Sending the mail
+            mailMessage.subject = "recovery code"
             javaMailSender.send(mailMessage)
-
-        } // Catch block to handle the exceptions
-        catch (e: Exception) {
+        } catch (e: Exception) {
             print(e.message)
         }
     }

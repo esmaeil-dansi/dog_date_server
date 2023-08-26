@@ -8,4 +8,3 @@ data class Text(val text: String)
 
 data class File(val fileInfo: FileInfo)
 
-data class Location(val location: Location)

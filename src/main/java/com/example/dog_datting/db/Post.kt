@@ -16,8 +16,7 @@ class Post(
     var type: PostType = PostType.BAY,
     var fileUuid: String = "",
     var time: Long = 0,
-    var lat: Double = 0.0,
-    var lon: Double = 0.0,
+    var location: Location = Location()
 
 
-    )
+)
