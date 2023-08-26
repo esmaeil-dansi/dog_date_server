@@ -104,7 +104,7 @@ class MessageService(
     }
 
 
-    private fun convertMessage(message: Message): com.example.dog_datting.dto.Message =
+     fun convertMessage(message: Message): com.example.dog_datting.dto.Message =
         Message(
             from = message.from,
             to = message.to,

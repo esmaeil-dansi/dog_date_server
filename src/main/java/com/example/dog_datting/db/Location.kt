@@ -10,5 +10,5 @@ data class Location(
     @GeneratedValue
     val id: Long = 0,
     var lat: Double = 0.0,
-    var lan: Double = 0.0
+    var lon: Double = 0.0
 )
