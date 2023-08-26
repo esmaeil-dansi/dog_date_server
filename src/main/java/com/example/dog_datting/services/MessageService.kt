@@ -64,6 +64,7 @@ class MessageService(
             time = System.currentTimeMillis()
         )
         messageRepo.save(msg)
+        logger.info("proxy Message" + message.body)
         simpMessagingTemplate.convertAndSendToUser(
             message.to, "/private", Packet(message = convertMessage(msg))
         )
@@ -87,6 +88,7 @@ class MessageService(
     }
 
     fun processComment(comment: CommentDto) {
+        logger.info("process comment")
         commentRepo.save(
             Comment(
                 from = comment.from,
