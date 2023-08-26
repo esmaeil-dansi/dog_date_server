@@ -193,7 +193,7 @@ class MainController(
     @ResponseBody
     fun savePost(@RequestBody newPostDao: NewPostDao): ResponseEntity<SavePostRes?> {
         try {
-            val location = locationRepo.save(Location(lan = newPostDao.location.lan, lat = newPostDao.location.lat))
+            val location = locationRepo.save(Location(lon = newPostDao.location.lon, lat = newPostDao.location.lat))
             val time: Long = System.currentTimeMillis();
             val post = Post()
             post.description = newPostDao.description
@@ -274,7 +274,7 @@ class MainController(
                 postRes.ownerId = post.ownerId
                 postRes.type = post.type
                 postRes.location =
-                    com.example.dog_datting.models.Location(lat = post.location.lat, lan = post.location.lan)
+                    com.example.dog_datting.models.Location(lat = post.location.lat, lon = post.location.lon)
                 val info = fileInfoRepo.getByPacketId(post.fileUuid)
                 if (info != null) {
                     postRes.fileUuids = info.map { f -> f.uuid }
@@ -301,7 +301,7 @@ class MainController(
     @ResponseBody
     fun saveDoctor(@RequestBody doctorDto: DoctorDto): ResponseEntity<String?> {
         try {
-            val location = locationRepo.save(Location(lat = doctorDto.location.lat, lan = doctorDto.location.lat))
+            val location = locationRepo.save(Location(lat = doctorDto.location.lat, lon = doctorDto.location.lat))
             doctorRepo.save(
                 Doctor(
                     ownerId = doctorDto.ownerId,

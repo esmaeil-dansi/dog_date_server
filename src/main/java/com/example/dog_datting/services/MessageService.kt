@@ -31,6 +31,11 @@ class MessageService(
         if (chat != null) {
             lastMessageId = chat.lastMessageId + 1
         }
+        var last = message.body;
+        if (message.type != "TEXT") {
+            last = "file";
+        }
+
         chat = if (chat != null) {
             chatRepository.save(
                 Chat(
@@ -39,14 +44,14 @@ class MessageService(
                     ownerId = message.from,
                     userId = message.to,
                     lastTime = time,
-                    lastMessage = JSONObject(message).toString()
+                    lastMessage = last
                 )
             )
         } else {
             chatRepository.save(
                 Chat(
                     lastMessageId = lastMessageId, ownerId = message.from, userId = message.to, lastTime = time,
-                    lastMessage = JSONObject(message).toString()
+                    lastMessage = last
                 )
             )
         }
@@ -104,7 +109,7 @@ class MessageService(
     }
 
 
-     fun convertMessage(message: Message): com.example.dog_datting.dto.Message =
+    fun convertMessage(message: Message): com.example.dog_datting.dto.Message =
         Message(
             from = message.from,
             to = message.to,
