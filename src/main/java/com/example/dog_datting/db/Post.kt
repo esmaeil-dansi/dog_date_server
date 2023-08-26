@@ -4,6 +4,7 @@ import com.example.dog_datting.models.PostType
 import javax.persistence.Entity
 import javax.persistence.GeneratedValue
 import javax.persistence.Id
+import javax.persistence.ManyToOne
 
 @Entity
 class Post(
@@ -16,6 +17,7 @@ class Post(
     var type: PostType = PostType.BAY,
     var fileUuid: String = "",
     var time: Long = 0,
+    @ManyToOne
     var location: Location = Location()
 
 

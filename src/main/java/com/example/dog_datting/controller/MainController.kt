@@ -289,7 +289,7 @@ class MainController(
     @GetMapping(path = ["/fetchComments/{postId}"])
     fun fetchComments(@PathVariable("postId") postId: Int): List<Comment>? {
         try {
-            return commentRepo.getCommentsByPostIdByOrderByTimeDesc(postId = postId.toString())
+            return commentRepo.getCommentByPostIdOrderByTimeDesc(postId = postId.toString())
         } catch (e: Exception) {
             logger.error(e.message)
         }
