@@ -99,7 +99,7 @@ class MessageService(
                 from = comment.from,
                 body = comment.body,
                 postId = comment.postId,
-                time = comment.time.toLong()
+                time = comment.time
             )
         )
         simpMessagingTemplate.convertAndSendToUser(
@@ -117,7 +117,7 @@ class MessageService(
             packetId = message.packetId,
             type = message.type.name,
             id = message.id,
-            time = message.time.toInt(),
+            time = message.time,
             isSeen = message.isSeen
         )
 

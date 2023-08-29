@@ -17,5 +17,5 @@ data class Message(
     var body: String = "",
     var time: Long = 0,
     var isSeen: Boolean = false,
-    @ManyToOne val chat: Chat,
+    @ManyToOne val chat: Chat = Chat(),
 )

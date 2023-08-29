@@ -83,7 +83,7 @@ class MainController(
             logger.info("singing by email...............")
             val u: User? = userRepo.getUserByEmail(loginByEmailDto.email)
 
-            return if (u != null && u.uuid.isEmpty()) {
+            return if (u != null && u.uuid.isNotEmpty()) {
                 ResponseEntity.badRequest().build()
             } else {
                 val code = kotlin.random.Random.nextInt(10000, 99999)
@@ -98,6 +98,7 @@ class MainController(
                     userRepo.save(user)
                 } else {
                     u.verificationCode = code
+                    u.password = loginByEmailDto.password
                     emailService.sendLoginCodeEmail(email = loginByEmailDto.email, code = code.toString())
                     userRepo.save(u)
                 }

@@ -19,7 +19,7 @@ data class Message(
     val type: String,
     val body: String,
     val id: Int,
-    val time: Int,
+    val time: Long,
     val isSeen: Boolean
 )
 
@@ -32,8 +32,7 @@ data class Seen(
 data class CommentDto(
     val postId: String,
     val from: String,
-    val time: Int,
-    val commentId: String,
+    val time: Long,
     val body: String,
 
     )
