@@ -17,6 +17,6 @@ data class User(
     var recoveryCode: Int = 0,
     var info: String = "",
     var interests: String = "",
-    @OneToOne
+    @ManyToOne
     var location: Location? = null
 )

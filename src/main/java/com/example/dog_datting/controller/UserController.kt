@@ -1,19 +1,14 @@
 package com.example.dog_datting.controller
 
-import com.example.dog_datting.db.Friends
-import com.example.dog_datting.db.Gallery
-import com.example.dog_datting.db.User
+import com.example.dog_datting.db.*
 import com.example.dog_datting.dto.*
 import com.example.dog_datting.models.UserId
-import com.example.dog_datting.repo.FriendRepo
-import com.example.dog_datting.repo.GalleryRepo
-import com.example.dog_datting.repo.NotificationRepo
-import com.example.dog_datting.repo.UserRepo
+import com.example.dog_datting.repo.*
 import com.example.dog_datting.services.EmailService
+import com.example.dog_datting.services.MessageService
 import com.example.dog_datting.services.UserService
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import java.util.*
@@ -25,10 +20,11 @@ class UserController(
     private val userService: UserService,
     private val galleryRepo: GalleryRepo,
     private val notificationRepo: NotificationRepo,
-    private val friendRepo: FriendRepo
+    private val friendRepo: FriendRepo,
+    private val messageService: MessageService,
+    private val emailService: EmailService,
+    private val locationRepo: LocationRepo
 ) {
-    @Autowired
-    private lateinit var emailService: EmailService
 
     val logger: Logger = LogManager.getLogger(UserController::class.java)
 
@@ -194,6 +190,89 @@ class UserController(
         return null
     }
 
+    fun distance(
+        lat1: Double, lat2: Double, lon1: Double,
+        lon2: Double,
+    ): Double {
+        val R = 6371 // Radius of the earth
+        val latDistance = Math.toRadians(lat2 - lat1)
+        val lonDistance = Math.toRadians(lon2 - lon1)
+        val a = (Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
+                + (Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2)))
+        val c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+        var distance = R * c * 1000 // convert to meters
+        distance = Math.pow(distance, 2.0)
+        return Math.sqrt(distance)
+    }
+
+    @PostMapping("/createNotification/{user}")
+    @ResponseBody
+    fun createNotification(
+        @RequestBody notificationDto: NotificationDto,
+        @PathVariable(value = "user") user: String
+    ): Int? {
+        try {
+            var user: User? = userRepo.getUserByUuid(user)
+            if (user != null) {
+                var users: List<User>? = userRepo.findByLocationIsNotNull()
+                if (users != null) {
+                    if (notificationDto.location != null)
+                        users.forEach { u ->
+                            if (distance(
+                                    notificationDto.location.lat,
+                                    user.location!!.lat,
+                                    notificationDto.location.lon,
+                                    user.location!!.lon
+                                ) > 0
+                            ) {
+                                val location = locationRepo.save(
+                                    Location(
+                                        lon = notificationDto.location.lon,
+                                        lat = notificationDto.location.lat
+                                    )
+                                )
+                                val notifications = Notifications(
+                                    body = notificationDto.body,
+                                    location = location,
+                                    sender = user, receiver = u,
+                                    type = notificationDto.type,
+                                    time = System.currentTimeMillis(),
+                                    fileInfo = notificationDto.fileInfo
+                                )
+                                val res = notificationRepo.save(notifications);
+                                messageService.sendNotification(notifications = res, to = u.uuid)
+                            }
+
+
+                        }
+                }
+
+
+            }
+
+
+        } catch (e: Exception) {
+            logger.error(e.message)
+        }
+        return null
+    }
+
+    @GetMapping("/getAllNotifications/{user}")
+    @ResponseBody
+    fun getAllNotifications(@PathVariable(value = "user") user: String): List<Notifications>? {
+        try {
+            val user: User? = userRepo.getUserByUuid(user)
+            if (user != null) {
+                return notificationRepo.getBySenderOrReceiver(user, user)
+            }
+        } catch (e: Exception) {
+            logger.error(e)
+        }
+        return null
+    }
+
+
     @GetMapping("/getFriends/{user}")
     @ResponseBody
     fun getFriends(@PathVariable(value = "user") user: String): List<String>? {
@@ -205,6 +284,19 @@ class UserController(
             logger.error(e)
         }
         return null
+    }
+
+    @PostMapping("/shareLocation/{user}")
+    fun shareLocation(
+        @RequestBody location: com.example.dog_datting.models.Location,
+        @PathVariable(value = "user") user: String
+    ): ResponseEntity<String> {
+        var u: User? = userRepo.getUserByUuid(user);
+        if (u != null) {
+            u.location = locationRepo.save(Location(lon = location.lon, lat = location.lat))
+            userRepo.save(u)
+        }
+        return ResponseEntity.ok().build()
     }
 
     @GetMapping("/getGallery/{user}")

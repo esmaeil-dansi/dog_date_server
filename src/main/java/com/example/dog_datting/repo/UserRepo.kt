@@ -9,4 +9,6 @@ interface UserRepo : JpaRepository<User, Int> {
     fun getUserByEmail(email: String): User?
 
     fun getUserByPhoneNumber(phoneNumber: String): User?
+
+    fun findByLocationIsNotNull(): List<User>?
 }

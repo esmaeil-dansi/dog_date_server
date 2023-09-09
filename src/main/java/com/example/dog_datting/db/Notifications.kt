@@ -14,6 +14,9 @@ data class Notifications(
     @ManyToOne
     var sender: User = User(),
 
+    @ManyToOne
+    var receiver: User = User(),
+
     var type: NotificationType = NotificationType.NEWS,
     var time: Long = 0,
 
