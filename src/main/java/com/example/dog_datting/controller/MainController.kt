@@ -17,14 +17,11 @@ import java.util.*
 
 @RestController
 class MainController(
-    private val userService: UserService,
     private val chatRepo: ChatRepo
 ) {
 
     val logger: Logger = LogManager.getLogger(MainController::class.java)
 
-    @Autowired
-    private lateinit var userRepo: UserRepo
 
     @Autowired
     private lateinit var commentRepo: CommentRepo
@@ -47,147 +44,12 @@ class MainController(
     @Autowired
     private lateinit var fileInfoRepo: FileInfoRepo
 
-    @Autowired
-    private lateinit var emailService: EmailService
 
     @Autowired
     private lateinit var storyRepo: StoryRepo
 
 
-    @PostMapping(path = ["/singingByPhoneNumber"])
-    @ResponseBody
-    fun singing(@RequestBody loginByPhoneNumberDto: PhoneNumberDto): ResponseEntity<String> {
-        try {
-            val user: User? = userRepo.getUserByPhoneNumber(loginByPhoneNumberDto.phoneNumber)
-            return if (user != null) {
-                ResponseEntity.ok().body("INSERT_PASSWORD")
-            } else {
-                val rand = Random()
-                val code = rand.nextInt(5)
-                userService.sendVerificationCodeToPhone(loginByPhoneNumberDto.phoneNumber, code.toString())
-                val user = User()
-                user.phoneNumber = loginByPhoneNumberDto.phoneNumber
-                user.verificationCode = code
-                userRepo.save(user)
-                ResponseEntity.ok().body("REGISTER")
-            }
-        } catch (ignored: Exception) {
-        }
-        return ResponseEntity.badRequest().build()
-    }
 
-    @PostMapping(path = ["/singingByEmail"])
-    @ResponseBody
-    fun singingByEmail(@RequestBody loginByEmailDto: EmailDto): ResponseEntity<String> {
-        try {
-            logger.info("singing by email...............")
-            val u: User? = userRepo.getUserByEmail(loginByEmailDto.email)
-
-            return if (u != null && u.uuid.isNotEmpty()) {
-                ResponseEntity.badRequest().build()
-            } else {
-                val code = kotlin.random.Random.nextInt(10000, 99999)
-
-                if (u == null) {
-                    val user = User()
-                    logger.info("verification cede\t" + code)
-                    user.email = loginByEmailDto.email
-                    user.password = loginByEmailDto.password
-                    user.verificationCode = code
-                    emailService.sendLoginCodeEmail(email = loginByEmailDto.email, code = code.toString())
-                    userRepo.save(user)
-                } else {
-                    u.verificationCode = code
-                    u.password = loginByEmailDto.password
-                    emailService.sendLoginCodeEmail(email = loginByEmailDto.email, code = code.toString())
-                    userRepo.save(u)
-                }
-
-                ResponseEntity.ok().build()
-            }
-        } catch (e: Exception) {
-            logger.error(e.message)
-        }
-        return ResponseEntity.internalServerError().build()
-    }
-
-    @GetMapping("/recoveryEmail/{email}")
-    @ResponseBody
-    fun sendRecoveryEmail(@PathVariable(value = "email") email: String): ResponseEntity<String> {
-        var user: User? = userRepo.getUserByEmail(email = email)
-        if (user != null) {
-            val recoverCode = kotlin.random.Random.nextInt(10000, 99999)
-            user.recoveryCode = recoverCode
-            userRepo.save(user)
-            emailService.sendVerifyCodeEmail(email = email, code = recoverCode.toString())
-            return ResponseEntity.ok().build()
-        }
-        return ResponseEntity.badRequest().build()
-    }
-
-    @PostMapping(path = ["/sendVerificationCode"])
-    @ResponseBody
-    fun sendVerificationCode(@RequestBody verificationDto: VerificationDto): ResponseEntity<String> {
-        try {
-            val u: User? = userRepo.getUserByEmail(verificationDto.user)
-            logger.info("sendVerificationCode")
-
-            return if (u != null && u.verificationCode == verificationDto.code) {
-                val uuid = UUID.randomUUID().toString();
-                u.uuid = uuid
-                userRepo.save(u)
-                ResponseEntity.ok().body(u.uuid)
-            } else {
-                ResponseEntity.badRequest().build()
-            }
-        } catch (e: Exception) {
-            logger.error(e.message)
-        }
-        return ResponseEntity.internalServerError().build()
-    }
-
-
-    @PostMapping(path = ["/recovery"])
-    @ResponseBody
-    fun recovery(@RequestBody recoveryDto: RecoveryDto): ResponseEntity<String> {
-        try {
-            val u: User? = userRepo.getUserByEmail(recoveryDto.email)
-
-            return if (u != null && u.recoveryCode == recoveryDto.code) {
-                u.password = recoveryDto.password
-                userRepo.save(u)
-                ResponseEntity.ok().body(u.uuid)
-            } else {
-                ResponseEntity.badRequest().build()
-            }
-        } catch (ignored: Exception) {
-        }
-        return ResponseEntity.internalServerError().build()
-    }
-
-    @PostMapping(path = ["/login"])
-    @ResponseBody
-    fun login(@RequestBody loginDto: LoginDto): ResponseEntity<String> {
-        try {
-            var user: User? = null
-            if (loginDto.email.isNotEmpty()) {
-                user = userRepo.getUserByEmail(loginDto.email)
-            }
-            return if (user != null) {
-                if (user.password == loginDto.password) {
-                    ResponseEntity.ok(user.uuid)
-                } else {
-                    ResponseEntity.badRequest().body("NOT_MATCH")
-                }
-            } else {
-                ResponseEntity.notFound().build()
-            }
-
-        } catch (ignored: Exception) {
-        }
-        return ResponseEntity.internalServerError().build()
-
-    }
 
 
     @PostMapping(path = ["/savePost"]) //

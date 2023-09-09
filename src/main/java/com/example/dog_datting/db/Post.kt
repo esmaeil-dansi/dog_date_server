@@ -1,6 +1,7 @@
 package com.example.dog_datting.db
 
 import com.example.dog_datting.models.PostType
+import com.example.dog_datting.models.UserId
 import javax.persistence.Entity
 import javax.persistence.GeneratedValue
 import javax.persistence.Id

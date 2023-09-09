@@ -8,4 +8,6 @@ interface MessageRepo : JpaRepository<Message, Long> {
     fun getMessageByMessageIdAndFrom(messageId: Int, from: String): Message?
 
     fun getMessageByChat(chat: Chat): List<Message>?
+
+    fun getMessageByChatAndMessageIdGreaterThanOrderByMessageIdDesc(chat: Chat, messageId: Int): List<Message>?
 }

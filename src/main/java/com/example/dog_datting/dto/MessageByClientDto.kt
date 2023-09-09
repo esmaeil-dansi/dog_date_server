@@ -1,5 +1,6 @@
 package com.example.dog_datting.dto
 
+import com.example.dog_datting.db.Notifications
 import com.example.dog_datting.models.Location
 
 
@@ -54,6 +55,7 @@ data class Packet(
     val message: Message? = null,
     val seen: Seen? = null,
     val ack: Ack? = null,
+    val notification: Notifications? = null,
 )
 
 

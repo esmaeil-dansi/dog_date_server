@@ -15,7 +15,8 @@ data class User(
     var email: String = "",
     var phoneNumber: String = "",
     var recoveryCode: Int = 0,
-
+    var info: String = "",
+    var interests: String = "",
     @OneToOne
     var location: Location? = null
 )

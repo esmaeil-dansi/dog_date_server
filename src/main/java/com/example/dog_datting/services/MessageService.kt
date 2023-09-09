@@ -4,6 +4,7 @@ import com.example.dog_datting.controller.MainController
 import com.example.dog_datting.db.Chat
 import com.example.dog_datting.db.Comment
 import com.example.dog_datting.db.Message
+import com.example.dog_datting.db.Notifications
 import com.example.dog_datting.dto.*
 import com.example.dog_datting.models.MessageType
 import com.example.dog_datting.repo.ChatRepo
@@ -78,6 +79,12 @@ class MessageService(
             message.from,
             "/private",
             Packet(ack = Ack(packetId = message.packetId, id = msg.messageId, chatId = chat.userId))
+        )
+    }
+
+    fun sendNotification(notifications: Notifications, to: String) {
+        simpMessagingTemplate.convertAndSendToUser(
+            to, "/private", Packet(notification = notifications)
         )
     }
 
