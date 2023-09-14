@@ -2,6 +2,8 @@ package com.example.dog_datting.controller
 
 import com.example.dog_datting.db.*
 import com.example.dog_datting.dto.*
+import com.example.dog_datting.models.Gender
+import com.example.dog_datting.models.NotificationType
 import com.example.dog_datting.models.UserId
 import com.example.dog_datting.repo.*
 import com.example.dog_datting.services.EmailService
@@ -23,7 +25,9 @@ class UserController(
     private val friendRepo: FriendRepo,
     private val messageService: MessageService,
     private val emailService: EmailService,
-    private val locationRepo: LocationRepo
+    private val locationRepo: LocationRepo,
+    private val animalRepo: AnimalRepo,
+    private val topicRepo: TopicRepo
 ) {
 
     val logger: Logger = LogManager.getLogger(UserController::class.java)
@@ -38,7 +42,7 @@ class UserController(
             }
             return if (user != null) {
                 if (user.password == loginDto.password) {
-                    ResponseEntity.ok(UserId(id = user.uuid, username = user.firstname))
+                    ResponseEntity.ok(UserId(id = user.uuid, username = user.username, name = user.firstname))
                 } else {
                     ResponseEntity.badRequest().build()
                 }
@@ -50,6 +54,20 @@ class UserController(
         }
         return ResponseEntity.internalServerError().build()
 
+    }
+
+    @PostMapping(path = ["/createTopic/{topic}"])
+    @ResponseBody
+    fun createTopic(@PathVariable(value = "topic") topic: String): ResponseEntity<String> {
+        try {
+            val topics: Topics? = topicRepo.getByName(topic)
+            if (topics == null) {
+                topicRepo.save(Topics(name = topic))
+            }
+            return ResponseEntity.ok().build()
+        } catch (ignored: Exception) {
+        }
+        return ResponseEntity.badRequest().build()
     }
 
     @PostMapping(path = ["/singingByPhoneNumber"])
@@ -84,12 +102,12 @@ class UserController(
                 ResponseEntity.badRequest().build()
             } else {
                 val code = kotlin.random.Random.nextInt(10000, 99999)
-
                 if (u == null) {
                     val user = User()
                     logger.info("verification cede\t" + code)
                     user.email = loginByEmailDto.email
-                    user.firstname = loginByEmailDto.username
+                    user.username = loginByEmailDto.username
+                    user.firstname = loginByEmailDto.name
                     user.password = loginByEmailDto.password
                     user.verificationCode = code
                     emailService.sendLoginCodeEmail(email = loginByEmailDto.email, code = code.toString())
@@ -109,13 +127,47 @@ class UserController(
         return ResponseEntity.internalServerError().build()
     }
 
+
+    @GetMapping("/getAllTopics")
+    @ResponseBody
+    fun getAllTopics(
+
+    ): List<Topics>? {
+        try {
+            return topicRepo.findAll();
+
+        } catch (e: Exception) {
+            logger.error(e.message)
+        }
+        return null
+    }
+
+    @GetMapping("/checkUsername/{user}/{username}")
+    @ResponseBody
+    fun checkUsernameIsExit(
+        @PathVariable(value = "username") username: String,
+        @PathVariable(value = "user") uid: String
+    ): ResponseEntity<String?> {
+        try {
+            val user: User? = userRepo.getUserByUsername(username = username)
+            if (user == null || user.uuid == uid) {
+                return ResponseEntity.ok().build()
+            }
+            return ResponseEntity.badRequest().build()
+
+        } catch (e: Exception) {
+            return ResponseEntity.internalServerError().build();
+        }
+
+    }
+
     @GetMapping("/getUsername/{uuid}")
     @ResponseBody
     fun getUsername(@PathVariable(value = "uuid") uuid: String): ResponseEntity<String?> {
         try {
             val user: User? = userRepo.getUserByUuid(uuid)
             if (user != null) {
-                return ResponseEntity.ok().body(user.firstname)
+                return ResponseEntity.ok().body(user.username)
             }
             return ResponseEntity.badRequest().build()
 
@@ -179,6 +231,7 @@ class UserController(
         return ResponseEntity.internalServerError().build()
     }
 
+
     @GetMapping("/getAllUser")
     @ResponseBody
     fun getAllUser(): List<User>? {
@@ -235,8 +288,8 @@ class UserController(
                                 val notifications = Notifications(
                                     body = notificationDto.body,
                                     location = location,
-                                    sender = user, receiver = u,
-                                    type = notificationDto.type,
+                                    sender = user.uuid, receiver = u.uuid,
+                                    type = NotificationType.valueOf(notificationDto.type),
                                     time = System.currentTimeMillis(),
                                     fileInfo = notificationDto.fileInfo
                                 )
@@ -299,6 +352,105 @@ class UserController(
         return ResponseEntity.ok().build()
     }
 
+    @GetMapping("/getUser/{user}")
+    @ResponseBody
+    fun getUser(@PathVariable(value = "user") user: String): User? {
+        try {
+            return userRepo.getUserByUuid(user)
+
+        } catch (e: Exception) {
+            logger.error(e)
+        }
+        return null
+    }
+
+    @GetMapping("/getAnimals/{user}")
+    @ResponseBody
+    fun getAnimals(@PathVariable(value = "user") user: String): List<Animal>? {
+        try {
+            return animalRepo.getByOwner(user);
+
+        } catch (e: Exception) {
+            logger.error(e)
+        }
+        return null
+    }
+
+
+    @GetMapping("/deleteAnimal/{owner}/{id}")
+    @ResponseBody
+    fun deleteAnimal(
+        @PathVariable(value = "owner") user: String,
+        @PathVariable(value = "id") id: Long
+    ): ResponseEntity<String?> {
+        try {
+            val a: Optional<Animal> = animalRepo.findById(id)
+            if (a.isPresent && a.get().owner.equals(user)) {
+                animalRepo.deleteById(id)
+                return ResponseEntity.ok().build()
+            }
+
+        } catch (e: Exception) {
+            logger.error(e.message)
+        }
+        return ResponseEntity.internalServerError().build()
+
+    }
+
+    @PostMapping("/editAnimal")
+    @ResponseBody
+    fun editAnimal(@RequestBody animalDto: NewAnimalDto): ResponseEntity<String?> {
+        try {
+            animalRepo.save(
+                Animal(
+                    id = animalDto.id,
+                    owner = animalDto.owner,
+                    name = animalDto.name,
+                    description = animalDto.description,
+                    birthDay = animalDto.birthDay.toString(),
+                    breed = animalDto.breed,
+                    sex = Gender.valueOf(animalDto.sex),
+                    passed = animalDto.passed,
+                    death = animalDto.death.toString(),
+                    neutered = animalDto.neutered,
+                    lose = animalDto.lose,
+                    avatarId = animalDto.avatarId
+                )
+            )
+            return ResponseEntity.ok().build();
+        } catch (e: Exception) {
+            logger.error(e)
+        }
+        return ResponseEntity.internalServerError().build();
+    }
+
+    @PostMapping("/addNewAnimal")
+    @ResponseBody
+    fun addAnimal(@RequestBody animalDto: NewAnimalDto): ResponseEntity<Long?>? {
+        try {
+            var res = animalRepo.save(
+                Animal(
+                    owner = animalDto.owner,
+                    name = animalDto.name,
+                    description = animalDto.description,
+                    birthDay = animalDto.birthDay.toString(),
+                    breed = animalDto.breed,
+                    sex = Gender.valueOf(animalDto.sex),
+                    passed = animalDto.passed,
+                    death = animalDto.death.toString(),
+                    neutered = animalDto.neutered,
+                    lose = animalDto.lose,
+                    avatarId = animalDto.avatarId
+                )
+            )
+            return ResponseEntity.ok().body(res.id)
+        } catch (e: Exception) {
+            logger.error(e)
+        }
+        return null
+
+    }
+
     @GetMapping("/getGallery/{user}")
     @ResponseBody
     fun getGallery(@PathVariable(value = "user") user: String): List<Gallery>? {
@@ -312,6 +464,29 @@ class UserController(
         return null
     }
 
+    @PostMapping(path = ["/editInfo/{user}"])
+    @ResponseBody
+    fun editInfo(
+        @RequestBody info: String,
+        @PathVariable(value = "user") user: String,
+
+        ): ResponseEntity<String?> {
+        try {
+            val o: User? = userRepo.getUserByUuid(user)
+            if (o != null) {
+                o.info = info
+                userRepo.save(o)
+            }
+
+            return ResponseEntity.ok().build()
+
+        } catch (e: Exception) {
+            logger.error(e)
+        }
+        return ResponseEntity.badRequest().build()
+
+    }
+
     @PostMapping(path = ["/addFriend/{owner}/{user}"])
     @ResponseBody
     fun addFriend(
@@ -319,9 +494,9 @@ class UserController(
         @PathVariable(value = "user") frined: String
     ): ResponseEntity<String?> {
         try {
-            val owner: User? = userRepo.getUserByUuid(owner)
+            val o: User? = userRepo.getUserByUuid(owner)
             val friend: User? = userRepo.getUserByUuid(frined)
-            friendRepo.save(Friends(owner = owner!!, user = friend!!))
+            friendRepo.save(Friends(owner = o!!, user = friend!!))
             return ResponseEntity.ok().build()
 
         } catch (e: Exception) {
@@ -343,13 +518,33 @@ class UserController(
             if (user != null) {
                 var res = galleryRepo.save(
                     Gallery(
-                        user = user,
+                        user = userId,
                         time = System.currentTimeMillis(),
                         comment = galleryDto.comment,
-                        fileinfo = galleryDto.fileInfo
+                        fileInfo = galleryDto.fileInfo
                     )
                 )
                 return ResponseEntity.ok().body(res.id.toInt())
+            }
+        } catch (e: Exception) {
+            logger.error(e.message)
+        }
+        return ResponseEntity.internalServerError().build()
+    }
+
+
+    @PostMapping(path = ["/deleteGallery/{user}/{id}"])
+    @ResponseBody
+    fun deleteGallery(
+
+        @PathVariable(value = "user") user: String,
+        @PathVariable(value = "id") id: Long
+    ): ResponseEntity<Int?> {
+        try {
+            val gallery: Optional<Gallery> = galleryRepo.findById(id)
+            if (gallery.isPresent && gallery.get().user == user) {
+                galleryRepo.deleteById(id)
+                return ResponseEntity.ok().build()
             }
         } catch (e: Exception) {
             logger.error(e.message)

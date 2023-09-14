@@ -11,11 +11,10 @@ data class Notifications(
     @GeneratedValue
     @Id
     var id: Long = 0,
-    @ManyToOne
-    var sender: User = User(),
 
-    @ManyToOne
-    var receiver: User = User(),
+    var sender: String = "",
+
+    var receiver: String = "",
 
     var type: NotificationType = NotificationType.NEWS,
     var time: Long = 0,
