@@ -52,6 +52,7 @@ class MessageController(
         try {
             val chat: Chat? = chatRepo.getByOwnerIdAndUserId(ownerId = ownerId, userId = userId)
             if (chat != null) {
+
                 if (chat.lastMessageId != lastMessageId) {
                     val messages: List<com.example.dog_datting.db.Message>? =
                         messageRepo.getMessageByChatAndMessageIdGreaterThanOrderByMessageIdDesc(chat, lastMessageId)

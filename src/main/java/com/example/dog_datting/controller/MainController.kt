@@ -49,14 +49,12 @@ class MainController(
     private lateinit var storyRepo: StoryRepo
 
 
-
-
-
     @PostMapping(path = ["/savePost"]) //
     @ResponseBody
     fun savePost(@RequestBody newPostDao: NewPostDao): ResponseEntity<SavePostRes?> {
         try {
             val location = locationRepo.save(Location(lon = newPostDao.location.lon, lat = newPostDao.location.lat))
+
             val time: Long = System.currentTimeMillis();
             val post = Post()
             post.description = newPostDao.description
@@ -66,6 +64,12 @@ class MainController(
             post.location = location
             post.fileUuid = newPostDao.fileUuid
             post.time = time
+            if (newPostDao.locationInfo != null) {
+                val locationInfo =
+                    locationRepo.save(Location(lon = newPostDao.locationInfo.lon, lat = newPostDao.locationInfo.lat))
+                post.locationInfo = locationInfo
+
+            }
             val id = postRepo.save(post)
             return ResponseEntity.ok().body(SavePostRes(time = time, id = id.id.toInt()))
         } catch (e: Exception) {
@@ -110,7 +114,8 @@ class MainController(
                             message = chat.lastMessage,
                             userId = chat.userId,
                             name = "",
-                            lastTime = chat.lastTime
+                            lastTime = chat.lastTime,
+                            lastMessageId = chat.lastMessageId
                         )
                     )
                 }
@@ -142,6 +147,12 @@ class MainController(
                 if (info != null) {
                     postRes.fileUuids = info.map { f -> f.uuid }
                 }
+                if (post.locationInfo != null) {
+                    postRes.locationInfo = com.example.dog_datting.models.Location(
+                        lat = post.locationInfo!!.lat,
+                        lon = post.locationInfo!!.lon
+                    )
+                }
                 postResList.add(postRes)
             }
         }
@@ -165,10 +176,18 @@ class MainController(
     fun saveDoctor(@RequestBody doctorDto: DoctorDto): ResponseEntity<String?> {
         try {
             val location = locationRepo.save(Location(lat = doctorDto.location.lat, lon = doctorDto.location.lat))
+            var locationInfo: Location? = null;
+            if (doctorDto.locationInfo != null) {
+                val l =
+                    locationRepo.save(Location(lon = doctorDto.locationInfo.lon, lat = doctorDto.locationInfo.lat))
+                locationInfo = l
+
+            }
             doctorRepo.save(
                 Doctor(
                     ownerId = doctorDto.ownerId,
                     name = doctorDto.name,
+                    locationInfo = locationInfo,
                     description = doctorDto.description,
                     avatarInfo = doctorDto.avatarInfo,
                     location = location

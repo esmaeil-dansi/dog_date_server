@@ -74,9 +74,24 @@ class FileController {
         return null
     }
 
-    @PostMapping(value = ["/upload/{fileUuid}"], consumes = ["multipart/form-data"])
+    @PostMapping(value = ["/uploadFile"], consumes = ["multipart/form-data"])
     @ResponseBody
-    fun uploadFiles(
+    fun uploadFile(
+        @RequestPart("file") file: MultipartFile,
+    ): ResponseEntity<String>? {
+        return try {
+            val uuid = UUID.randomUUID().toString() + "_" + file.originalFilename
+            minioService.saveFile(file.bytes, uuid)
+            ResponseEntity.ok().body(uuid)
+        } catch (e: Exception) {
+            logger.error(e.message);
+            ResponseEntity.internalServerError().body(e.message)
+        }
+    }
+
+    @PostMapping(value = ["/uploadGroupFile/{fileUuid}"], consumes = ["multipart/form-data"])
+    @ResponseBody
+    fun uploadGroupFile(
         @RequestPart("file") file: MultipartFile,
         @PathVariable(value = "fileUuid") fileUuid: String
     ): ResponseEntity<String>? {

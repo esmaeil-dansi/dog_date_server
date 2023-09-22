@@ -14,6 +14,7 @@ data class Notifications(
 
     var sender: String = "",
 
+    var packetId: String = "",
     var receiver: String = "",
 
     var type: NotificationType = NotificationType.NEWS,

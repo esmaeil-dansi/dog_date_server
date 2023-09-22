@@ -34,5 +34,6 @@ data class NotificationDto(
     val location: Location? = null,
     val body: String = "",
     val fileInfo: String = "",
-    val type: String
+    val type: String,
+    val packetId: String
 )

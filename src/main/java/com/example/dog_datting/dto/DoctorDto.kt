@@ -7,7 +7,8 @@ class DoctorDto(
     val avatarInfo: String,
     val description: String,
     val ownerId: String,
-    val location: Location = Location()
+    val location: Location = Location(),
+    val locationInfo: Location? = null,
 )
 
 data class RateDoctorDto(val ownerId: String, val rate: Int)

@@ -12,7 +12,7 @@ data class Animal(
     @Id
     var id: Long = 0,
     var name: String = "",
-    var breed: String,
+    var breed: String ="",
     var type: AnimalType = AnimalType.CAT,
     var owner: String = "",
     var birthDay: String = "",

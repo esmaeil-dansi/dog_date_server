@@ -8,4 +8,6 @@ import org.springframework.data.jpa.repository.JpaRepository
 interface FriendRepo : JpaRepository<Friends, Long> {
 
     fun findByOwner(owner: User): List<Friends>?
+
+    fun findByUser(user: User): List<Friends>?
 }

@@ -5,5 +5,5 @@ import com.example.dog_datting.db.User
 import org.springframework.data.jpa.repository.JpaRepository
 
 interface GalleryRepo : JpaRepository<Gallery, Long> {
-    fun getByUser(user: User): List<Gallery>?
+    fun getByUser(user: String): List<Gallery>?
 }

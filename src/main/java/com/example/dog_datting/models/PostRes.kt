@@ -8,5 +8,16 @@ data class PostRes(
     var description: String = "",
     var type: PostType = PostType.BAY,
     var fileUuids: List<String> = ArrayList(),
-    var location: Location = Location()
+    var location: Location = Location(),
+    var locationInfo: Location? = null,
+)
+
+data class PlaceRes(
+    var id: Long = 0,
+    var name: String = "",
+    var owner: String = "",
+    var description: String = "",
+    var fileUuids: List<String> = ArrayList(),
+    var location: Location = Location(),
+    var locationInfo: Location? = null,
 )

@@ -65,7 +65,18 @@ data class NewPostDao(
     val description: String,
     val type: String,
     val title: String,
-    val location: Location = Location()
+    val location: Location = Location(),
+    val locationInfo: Location? = null,
 
+    )
+
+
+data class NewPlaceDto(
+    val fileUuid: String,
+    val owner: String,
+    val description: String,
+    val name: String,
+    val location: Location = Location(),
+    val locationInfo: Location? = null,
 )
 

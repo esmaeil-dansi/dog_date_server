@@ -13,6 +13,9 @@ class Doctor(
     var name: String = "",
     var avatarInfo: String = "",
     @ManyToOne
-    var location: Location = Location()
+    var location: Location = Location(),
+
+    @ManyToOne
+    var locationInfo: Location? = null
 
 )

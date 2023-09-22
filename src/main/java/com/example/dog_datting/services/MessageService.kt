@@ -1,6 +1,6 @@
 package com.example.dog_datting.services
 
-import com.example.dog_datting.controller.MainController
+
 import com.example.dog_datting.db.Chat
 import com.example.dog_datting.db.Comment
 import com.example.dog_datting.db.Message
@@ -10,13 +10,11 @@ import com.example.dog_datting.models.MessageType
 import com.example.dog_datting.repo.ChatRepo
 import com.example.dog_datting.repo.CommentRepo
 import com.example.dog_datting.repo.MessageRepo
-import com.example.dog_datting.repo.PostRepo
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
-import org.json.JSONObject
 import org.springframework.messaging.simp.SimpMessagingTemplate
 import org.springframework.stereotype.Service
-
+      //ietf@rozanak.com
 @Service
 class MessageService(
     private val messageRepo: MessageRepo,
@@ -123,7 +121,7 @@ class MessageService(
             body = message.body,
             packetId = message.packetId,
             type = message.type.name,
-            id = message.id,
+            id = message.messageId,
             time = message.time,
             isSeen = message.isSeen
         )

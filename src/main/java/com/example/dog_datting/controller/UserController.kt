@@ -8,12 +8,14 @@ import com.example.dog_datting.models.UserId
 import com.example.dog_datting.repo.*
 import com.example.dog_datting.services.EmailService
 import com.example.dog_datting.services.MessageService
+import com.example.dog_datting.services.NotificationService
 import com.example.dog_datting.services.UserService
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import java.util.*
+import kotlin.collections.ArrayList
 
 
 @RestController
@@ -23,7 +25,7 @@ class UserController(
     private val galleryRepo: GalleryRepo,
     private val notificationRepo: NotificationRepo,
     private val friendRepo: FriendRepo,
-    private val messageService: MessageService,
+    private val notificationService: NotificationService,
     private val emailService: EmailService,
     private val locationRepo: LocationRepo,
     private val animalRepo: AnimalRepo,
@@ -42,6 +44,7 @@ class UserController(
             }
             return if (user != null) {
                 if (user.password == loginDto.password) {
+                    user.username = user.firstname;
                     ResponseEntity.ok(UserId(id = user.uuid, username = user.username, name = user.firstname))
                 } else {
                     ResponseEntity.badRequest().build()
@@ -50,7 +53,8 @@ class UserController(
                 ResponseEntity.notFound().build()
             }
 
-        } catch (ignored: Exception) {
+        } catch (e: Exception) {
+            logger.error(e.message)
         }
         return ResponseEntity.internalServerError().build()
 
@@ -243,65 +247,17 @@ class UserController(
         return null
     }
 
-    fun distance(
-        lat1: Double, lat2: Double, lon1: Double,
-        lon2: Double,
-    ): Double {
-        val R = 6371 // Radius of the earth
-        val latDistance = Math.toRadians(lat2 - lat1)
-        val lonDistance = Math.toRadians(lon2 - lon1)
-        val a = (Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
-                + (Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
-                * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2)))
-        val c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-        var distance = R * c * 1000 // convert to meters
-        distance = Math.pow(distance, 2.0)
-        return Math.sqrt(distance)
-    }
 
-    @PostMapping("/createNotification/{user}")
+    @PostMapping("/createNotification/{creator}")
     @ResponseBody
     fun createNotification(
         @RequestBody notificationDto: NotificationDto,
-        @PathVariable(value = "user") user: String
+        @PathVariable(value = "creator") creator: String
     ): Int? {
         try {
-            var user: User? = userRepo.getUserByUuid(user)
+            val user: User? = userRepo.getUserByUuid(creator)
             if (user != null) {
-                var users: List<User>? = userRepo.findByLocationIsNotNull()
-                if (users != null) {
-                    if (notificationDto.location != null)
-                        users.forEach { u ->
-                            if (distance(
-                                    notificationDto.location.lat,
-                                    user.location!!.lat,
-                                    notificationDto.location.lon,
-                                    user.location!!.lon
-                                ) > 0
-                            ) {
-                                val location = locationRepo.save(
-                                    Location(
-                                        lon = notificationDto.location.lon,
-                                        lat = notificationDto.location.lat
-                                    )
-                                )
-                                val notifications = Notifications(
-                                    body = notificationDto.body,
-                                    location = location,
-                                    sender = user.uuid, receiver = u.uuid,
-                                    type = NotificationType.valueOf(notificationDto.type),
-                                    time = System.currentTimeMillis(),
-                                    fileInfo = notificationDto.fileInfo
-                                )
-                                val res = notificationRepo.save(notifications);
-                                messageService.sendNotification(notifications = res, to = u.uuid)
-                            }
-
-
-                        }
-                }
-
-
+                notificationService.processNotification(notificationDto, user.uuid)
             }
 
 
@@ -311,14 +267,11 @@ class UserController(
         return null
     }
 
-    @GetMapping("/getAllNotifications/{user}")
+    @GetMapping("/getAllNotifications/{requester}")
     @ResponseBody
-    fun getAllNotifications(@PathVariable(value = "user") user: String): List<Notifications>? {
+    fun getAllNotifications(@PathVariable(value = "requester") requester: String): List<Notifications>? {
         try {
-            val user: User? = userRepo.getUserByUuid(user)
-            if (user != null) {
-                return notificationRepo.getBySenderOrReceiver(user, user)
-            }
+            return notificationRepo.getBySenderOrReceiver(requester, requester)
         } catch (e: Exception) {
             logger.error(e)
         }
@@ -326,13 +279,21 @@ class UserController(
     }
 
 
-    @GetMapping("/getFriends/{user}")
+    @GetMapping("/getFriends/{requester}")
     @ResponseBody
-    fun getFriends(@PathVariable(value = "user") user: String): List<String>? {
+    fun getFriends(@PathVariable(value = "requester") requester: String): List<User>? {
         try {
-            val user: User? = userRepo.getUserByUuid(user)
-            val res = friendRepo.findByOwner(user!!)
-            return res!!.map { s -> s.user.uuid }
+            val user: User? = userRepo.getUserByUuid(requester)
+            var res1 = friendRepo.findByOwner(user!!)
+            val res2 = friendRepo.findByUser(user)
+            var res: List<User> = listOf()
+            if (res1 != null) {
+                res = res1.map { d -> d.user }
+            }
+            if (res2 != null) {
+                res = res + res2.map { f -> f.owner }
+            }
+            return res
         } catch (e: Exception) {
             logger.error(e)
         }
@@ -424,6 +385,7 @@ class UserController(
         return ResponseEntity.internalServerError().build();
     }
 
+
     @PostMapping("/addNewAnimal")
     @ResponseBody
     fun addAnimal(@RequestBody animalDto: NewAnimalDto): ResponseEntity<Long?>? {
@@ -451,17 +413,38 @@ class UserController(
 
     }
 
-    @GetMapping("/getGallery/{user}")
+    @GetMapping("/getGallery/{requester}")
     @ResponseBody
-    fun getGallery(@PathVariable(value = "user") user: String): List<Gallery>? {
+    fun getGallery(@PathVariable(value = "requester") requester: String): List<Gallery>? {
         try {
-            val user: User? = userRepo.getUserByUuid(user)
-            return galleryRepo.getByUser(user!!)
-
+            return galleryRepo.getByUser(requester)
         } catch (e: Exception) {
             logger.error(e)
         }
         return null
+    }
+
+    @PostMapping(path = ["/editInterests/{user}"])
+    @ResponseBody
+    fun editInterests(
+        @RequestBody info: String,
+        @PathVariable(value = "user") user: String,
+
+        ): ResponseEntity<String?> {
+        try {
+            val o: User? = userRepo.getUserByUuid(user)
+            if (o != null) {
+                o.interests = info
+                userRepo.save(o)
+            }
+
+            return ResponseEntity.ok().build()
+
+        } catch (e: Exception) {
+            logger.error(e)
+        }
+        return ResponseEntity.badRequest().build()
+
     }
 
     @PostMapping(path = ["/editInfo/{user}"])
@@ -514,18 +497,16 @@ class UserController(
         @PathVariable(value = "userId") userId: String
     ): ResponseEntity<Int?> {
         try {
-            val user: User? = userRepo.getUserByUuid(userId)
-            if (user != null) {
-                var res = galleryRepo.save(
-                    Gallery(
-                        user = userId,
-                        time = System.currentTimeMillis(),
-                        comment = galleryDto.comment,
-                        fileInfo = galleryDto.fileInfo
-                    )
+            val res = galleryRepo.save(
+                Gallery(
+                    user = userId,
+                    time = System.currentTimeMillis(),
+                    comment = galleryDto.comment,
+                    fileInfo = galleryDto.fileInfo
                 )
-                return ResponseEntity.ok().body(res.id.toInt())
-            }
+            )
+            return ResponseEntity.ok().body(res.id.toInt())
+
         } catch (e: Exception) {
             logger.error(e.message)
         }
@@ -533,7 +514,7 @@ class UserController(
     }
 
 
-    @PostMapping(path = ["/deleteGallery/{user}/{id}"])
+    @GetMapping(path = ["/deleteGallery/{user}/{id}"])
     @ResponseBody
     fun deleteGallery(
 
