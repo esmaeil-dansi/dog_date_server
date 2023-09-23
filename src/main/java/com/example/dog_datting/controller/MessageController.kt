@@ -3,6 +3,7 @@ package com.example.dog_datting.controller
 import com.example.dog_datting.db.Chat
 import com.example.dog_datting.dto.ClientPacket
 import com.example.dog_datting.dto.Message
+import com.example.dog_datting.models.ChatResult
 import com.example.dog_datting.repo.ChatRepo
 import com.example.dog_datting.repo.MessageRepo
 import com.example.dog_datting.services.MessageService
@@ -42,6 +43,36 @@ class MessageController(
 
     }
 
+    @GetMapping("fetchChats/{uuid}")
+    @ResponseBody
+    fun fetchChat(@PathVariable(value = "uuid") uuid: String): List<ChatResult>? {
+        try {
+            var res: MutableList<ChatResult> = mutableListOf()
+            chatRepo.getByOwnerIdOrUserId(uuid, uuid)?.forEach { chat ->
+                run {
+                    var userId: String = chat.userId
+                    if (userId == uuid) {
+                        userId = chat.ownerId
+                    }
+                    res.add(
+                        ChatResult(
+                            message = chat.lastMessage,
+                            userId = userId,
+                            name = "",
+                            lastTime = chat.lastTime,
+                            lastMessageId = chat.lastMessageId
+                        )
+                    )
+                }
+            }
+            return res;
+        } catch (e: Exception) {
+            print(e.message)
+        }
+        return null
+    }
+
+
     @GetMapping(path = ["/fetchMessages/{ownerId}/{userId}/{lastMessageId}"])
     @ResponseBody
     fun fetchStory(
@@ -50,9 +81,11 @@ class MessageController(
         @PathVariable(value = "lastMessageId") lastMessageId: Int,
     ): List<Message>? {
         try {
-            val chat: Chat? = chatRepo.getByOwnerIdAndUserId(ownerId = ownerId, userId = userId)
+            var chat: Chat? = chatRepo.getByOwnerIdAndUserId(ownerId = ownerId, userId = userId)
+            if (chat == null) {
+                chat = chatRepo.getByOwnerIdAndUserId(ownerId = userId, userId = ownerId)
+            }
             if (chat != null) {
-
                 if (chat.lastMessageId != lastMessageId) {
                     val messages: List<com.example.dog_datting.db.Message>? =
                         messageRepo.getMessageByChatAndMessageIdGreaterThanOrderByMessageIdDesc(chat, lastMessageId)

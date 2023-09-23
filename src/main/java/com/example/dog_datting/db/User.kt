@@ -19,5 +19,6 @@ data class User(
     var info: String = "",
     var interests: String = "",
     @ManyToOne
-    var location: Location? = null
+    var location: Location? = null,
+    var firebaseToken: String = ""
 )

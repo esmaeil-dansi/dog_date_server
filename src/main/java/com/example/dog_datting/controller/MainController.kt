@@ -102,32 +102,6 @@ class MainController(
         return null
     }
 
-    @GetMapping("fetchChats/{uuid}")
-    @ResponseBody
-    fun fetchChat(@PathVariable(value = "uuid") uuid: String): List<ChatResult>? {
-        try {
-            var res: MutableList<ChatResult> = mutableListOf()
-            chatRepo.getByOwnerId(uuid)?.forEach { chat ->
-                run {
-                    res.add(
-                        ChatResult(
-                            message = chat.lastMessage,
-                            userId = chat.userId,
-                            name = "",
-                            lastTime = chat.lastTime,
-                            lastMessageId = chat.lastMessageId
-                        )
-                    )
-                }
-            }
-            return res;
-        } catch (e: Exception) {
-            print(e.message)
-        }
-        return null
-    }
-
-
     @GetMapping(path = ["/fetchPost/{lastPostId}"])
     fun fetchPost(@PathVariable("lastPostId") lastPostId: Int): List<PostRes> {
         val posts = postRepo.findByIdGreaterThanOrderByIdDesc(lastPostId.toLong())

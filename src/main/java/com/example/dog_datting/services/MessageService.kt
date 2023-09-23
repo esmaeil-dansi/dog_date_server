@@ -10,23 +10,29 @@ import com.example.dog_datting.models.MessageType
 import com.example.dog_datting.repo.ChatRepo
 import com.example.dog_datting.repo.CommentRepo
 import com.example.dog_datting.repo.MessageRepo
+import com.example.dog_datting.repo.UserRepo
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import org.springframework.messaging.simp.SimpMessagingTemplate
 import org.springframework.stereotype.Service
-      //ietf@rozanak.com
+
 @Service
 class MessageService(
     private val messageRepo: MessageRepo,
     private val simpMessagingTemplate: SimpMessagingTemplate,
     private var chatRepository: ChatRepo,
-    private var commentRepo: CommentRepo
+    private var commentRepo: CommentRepo,
+    private var userRepo: UserRepo,
+    private var firebaseMessagingService: FirebaseMessagingService
 ) {
     val logger: Logger = LogManager.getLogger(MessageService::class.java)
     fun proxyMessage(message: MessageByClientDto) {
         val time: Long = System.currentTimeMillis()
         var lastMessageId = 1
         var chat = chatRepository.getByOwnerIdAndUserId(message.from, message.to)
+        if (chat == null) {
+            chat = chatRepository.getByOwnerIdAndUserId(message.to, message.from)
+        }
         if (chat != null) {
             lastMessageId = chat.lastMessageId + 1
         }
@@ -78,6 +84,18 @@ class MessageService(
             "/private",
             Packet(ack = Ack(packetId = message.packetId, id = msg.messageId, chatId = chat.userId))
         )
+
+        sendFirebase(message.from, message.to, message.body)
+
+    }
+
+    fun sendFirebase(sender: String, receiver: String, body: String) {
+        var user1 = userRepo.getUserByUuid(sender)
+        var user2 = userRepo.getUserByUuid(receiver)
+        if (user1 != null && user2 != null && user2.firebaseToken.isNotEmpty()) {
+            firebaseMessagingService.sendNotification(user1.firstname, body, user2.firebaseToken);
+        }
+
     }
 
     fun sendNotification(notifications: Notifications, to: String) {

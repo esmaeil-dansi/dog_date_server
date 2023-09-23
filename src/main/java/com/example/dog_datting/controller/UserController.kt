@@ -447,6 +447,29 @@ class UserController(
 
     }
 
+    @PostMapping(path = ["/setFirebaseToken/{user}"])
+    @ResponseBody
+    fun setFirebaseToken(
+        @RequestBody token: String,
+        @PathVariable(value = "user") user: String,
+
+        ): ResponseEntity<String?> {
+        try {
+            val o: User? = userRepo.getUserByUuid(user)
+            if (o != null) {
+                o.firebaseToken = token
+                userRepo.save(o)
+                return ResponseEntity.ok().build()
+            }
+
+        } catch (e: Exception) {
+            logger.error(e)
+        }
+        return ResponseEntity.badRequest().build()
+
+    }
+
+
     @PostMapping(path = ["/editInfo/{user}"])
     @ResponseBody
     fun editInfo(
