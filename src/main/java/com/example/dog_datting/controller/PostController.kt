@@ -64,22 +64,28 @@ class PostController(
     }
 
     @PostMapping("/likePost/{postId}/{userId}")
-    fun likePost(@PathVariable("postId") postId: Int, @PathVariable("userId") userId: String) {
+    fun likePost(@PathVariable("postId") postId: Long, @PathVariable("userId") userId: String) {
         try {
             var post = postRepo.findById(postId)
             if (post.isPresent) {
                 val p = post.get()
                 var like = postLikesRepo.getByUserIdAndPost(post = post.get(), userId = userId)
+
                 if (like == null) {
+                    logger.info("like not found !!!!!!!!!!!")
                     postLikesRepo.save(PostLikes(post = post.get(), userId = userId))
                     p.likesCount++
                 } else {
+                    logger.info("like  found !!!!!!!!!!!")
                     postLikesRepo.delete(like)
                     if (p.likesCount > 0) {
                         p.likesCount--
                     }
                 }
+                logger.info("save likeeeee")
                 postRepo.save(p)
+            } else {
+                logger.info("post not found !!!!!!!!!!!")
             }
 
 
@@ -136,7 +142,7 @@ class PostController(
     @ResponseBody
     fun deletePost(@RequestBody id: Int): ResponseEntity<String?> {
         return try {
-            postRepo.deleteById(id)
+            postRepo.deleteById(id.toLong())
             ResponseEntity.ok().build();
         } catch (e: Exception) {
             logger.error(e.message)

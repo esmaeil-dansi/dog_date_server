@@ -115,7 +115,7 @@ class MainController(
                 }
                 doctorLikeRepo.save(DoctorLikes(doctorId = d.ownerId, userId = rateDoctorDto.requester))
                 doctorRepo.save(d)
-                ResponseEntity.ok().body(d.rate)
+                return ResponseEntity.ok().body(d.rate)
             }
             ResponseEntity.internalServerError().build()
 
