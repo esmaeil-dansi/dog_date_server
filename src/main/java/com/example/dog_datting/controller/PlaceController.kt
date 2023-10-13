@@ -5,6 +5,7 @@ import com.example.dog_datting.db.Place
 import com.example.dog_datting.dto.NewPlaceDto
 import com.example.dog_datting.dto.NotificationDto
 import com.example.dog_datting.models.PlaceRes
+import com.example.dog_datting.models.PlaceType
 import com.example.dog_datting.repo.FileInfoRepo
 import com.example.dog_datting.repo.LocationRepo
 import com.example.dog_datting.repo.PlaceRepo
@@ -36,6 +37,7 @@ class PlaceController(
                 placeRes.id = place.id
                 placeRes.name = place.name
                 placeRes.owner = place.owner
+                placeRes.type = place.type
                 placeRes.location =
                     com.example.dog_datting.models.Location(lat = place.location.lat, lon = place.location.lon)
                 val info = fileInfoRepo.getByPacketId(place.fileUuid)
@@ -55,6 +57,18 @@ class PlaceController(
         return postResList
     }
 
+    private fun getType(key: String): PlaceType {
+        when (key) {
+            "ALL" -> return PlaceType.ALL
+            "DOG" -> return PlaceType.DOG
+            "CAT" -> return PlaceType.CAT
+            "RABBIT" -> return PlaceType.RABBIT
+            "HORSE" -> return PlaceType.HORSE
+
+        }
+        return PlaceType.ALL
+    }
+
 
     @PostMapping(path = ["/createNewPlace"])
     @ResponseBody
@@ -66,6 +80,7 @@ class PlaceController(
             place.name = newPlaceDto.name
             place.owner = newPlaceDto.owner
             place.location = location
+            place.type = getType(newPlaceDto.type)
             place.fileUuid = newPlaceDto.fileUuid
             if (newPlaceDto.locationInfo != null) {
                 val locationInfo =

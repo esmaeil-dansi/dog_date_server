@@ -1,20 +1,23 @@
 package com.example.dog_datting.controller
 
 import com.example.dog_datting.db.Chat
+import com.example.dog_datting.db.Notifications
+import com.example.dog_datting.db.User
 import com.example.dog_datting.dto.ClientPacket
 import com.example.dog_datting.dto.Message
+import com.example.dog_datting.dto.NotificationDto
 import com.example.dog_datting.models.ChatResult
 import com.example.dog_datting.repo.ChatRepo
 import com.example.dog_datting.repo.MessageRepo
+import com.example.dog_datting.repo.NotificationRepo
+import com.example.dog_datting.repo.UserRepo
 import com.example.dog_datting.services.MessageService
+import com.example.dog_datting.services.NotificationService
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import org.springframework.messaging.handler.annotation.MessageMapping
 import org.springframework.messaging.handler.annotation.Payload
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.ResponseBody
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -23,7 +26,10 @@ import java.util.concurrent.Executors
 class MessageController(
     private val messageService: MessageService,
     private val messageRepo: MessageRepo,
-    private val chatRepo: ChatRepo
+    private val chatRepo: ChatRepo,
+    private val userRepo: UserRepo,
+    private val notificationRepo: NotificationRepo,
+    private val notificationService: NotificationService,
 ) {
     val logger: Logger = LogManager.getLogger(MessageController::class.java)
     val executorService: ExecutorService = Executors.newFixedThreadPool(10)
@@ -97,6 +103,36 @@ class MessageController(
             }
         } catch (e: Exception) {
             logger.error(e.message)
+        }
+        return null
+    }
+
+    @PostMapping("/createNotification/{creator}")
+    @ResponseBody
+    fun createNotification(
+        @RequestBody notificationDto: NotificationDto,
+        @PathVariable(value = "creator") creator: String
+    ): Int? {
+        try {
+            val user: User? = userRepo.getUserByUuid(creator)
+            if (user != null) {
+                notificationService.processNotification(notificationDto, user.uuid)
+            }
+
+
+        } catch (e: Exception) {
+            logger.error(e.message)
+        }
+        return null
+    }
+
+    @GetMapping("/getAllNotifications/{requester}")
+    @ResponseBody
+    fun getAllNotifications(@PathVariable(value = "requester") requester: String): List<Notifications>? {
+        try {
+            return notificationRepo.getBySenderOrReceiver(requester, requester)
+        } catch (e: Exception) {
+            logger.error(e)
         }
         return null
     }

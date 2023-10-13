@@ -13,6 +13,7 @@ data class PhoneNumberDto(val phoneNumber: String, val password: String)
 data class LoginDto(val email: String = "", val password: String)
 
 data class GalleryDto(val fileInfo: String, val comment: String)
+data class HeathDto(val fileUuid: String, val body: String)
 
 data class NewAnimalDto(
     val id: Long = 0,
@@ -28,6 +29,7 @@ data class NewAnimalDto(
     val birthDay: Long = 0,
     val lose: Boolean = false,
     val neutered: Boolean = false,
+    val uid: String = ""
 )
 
 data class NotificationDto(

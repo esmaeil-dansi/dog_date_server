@@ -20,5 +20,7 @@ data class User(
     var interests: String = "",
     @ManyToOne
     var location: Location? = null,
-    var firebaseToken: String = ""
+    var firebaseToken: String = "",
+    var isAdmin: Boolean = false,
+    var lastConnectionTime: Long = 0
 )

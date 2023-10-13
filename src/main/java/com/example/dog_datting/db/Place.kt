@@ -1,5 +1,6 @@
 package com.example.dog_datting.db
 
+import com.example.dog_datting.models.PlaceType
 import javax.persistence.Entity
 import javax.persistence.GeneratedValue
 import javax.persistence.Id
@@ -26,5 +27,7 @@ data class Place(
 
     var owner: String = "",
 
-    var submitted: Boolean = false
+    var submitted: Boolean = false,
+
+    var type: PlaceType = PlaceType.ALL
 )

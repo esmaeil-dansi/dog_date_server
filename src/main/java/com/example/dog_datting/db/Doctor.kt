@@ -16,6 +16,7 @@ class Doctor(
     var location: Location = Location(),
 
     @ManyToOne
-    var locationInfo: Location? = null
+    var locationInfo: Location? = null,
+    var locationDetails: String = "",
 
-)
+    )

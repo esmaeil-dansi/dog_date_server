@@ -22,7 +22,8 @@ class Post(
     var location: Location = Location(),
 
     @ManyToOne
-    var locationInfo: Location? = null
+    var locationInfo: Location? = null,
+    var likesCount: Int = 0,
 
 
-)
+    )
