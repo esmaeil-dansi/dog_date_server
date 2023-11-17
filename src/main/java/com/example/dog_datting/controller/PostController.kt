@@ -40,6 +40,7 @@ class PostController(
                 postRes.id = post.id
                 postRes.title = post.title
                 postRes.time = post.time
+                postRes.topics = post.topics.split(",")
                 postRes.ownerId = post.ownerId
                 postRes.type = post.type
                 postRes.location =
@@ -108,6 +109,7 @@ class PostController(
             post.title = newPostDao.title
             post.ownerId = newPostDao.ownerId
             post.location = location
+            post.topics = newPostDao.topics.joinToString()
             post.fileUuid = newPostDao.fileUuid
             post.time = time
             if (newPostDao.locationInfo != null) {

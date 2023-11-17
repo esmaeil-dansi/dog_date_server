@@ -12,6 +12,7 @@ data class PostRes(
     var locationInfo: Location? = null,
     var likes: Int = 0,
     var myFavorite: Boolean = false,
+    var topics: List<String> = ArrayList(),
 )
 
 data class PlaceRes(
@@ -22,6 +23,5 @@ data class PlaceRes(
     var fileUuids: List<String> = ArrayList(),
     var location: Location = Location(),
     var locationInfo: Location? = null,
-    var type: PlaceType = PlaceType.ALL
-
-)
+    var type: PlaceType = PlaceType.ALL,
+    )

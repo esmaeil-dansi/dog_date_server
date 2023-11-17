@@ -3,7 +3,9 @@ package com.example.dog_datting.controller
 import com.example.dog_datting.db.*
 import com.example.dog_datting.db.Location
 import com.example.dog_datting.dto.*
+import com.example.dog_datting.models.AdminRequestsRes
 import com.example.dog_datting.repo.*
+import com.example.dog_datting.services.PlaceService
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
@@ -13,7 +15,11 @@ import org.springframework.web.bind.annotation.*
 
 @RestController
 class MainController(
-    private val doctorLikeRepo: DoctorLikeRepo
+    private val doctorLikeRepo: DoctorLikeRepo,
+    private val adminRequestsRepo: AdminRequestsRepo,
+    private val userRepo: UserRepo,
+    private val advertisingRepo: AdvertisingRepo,
+    private val placeService: PlaceService,
 ) {
 
     val logger: Logger = LogManager.getLogger(MainController::class.java)
@@ -25,14 +31,9 @@ class MainController(
     @Autowired
     private lateinit var locationRepo: LocationRepo
 
-    @Autowired
-    private lateinit var shopRepo: ShopRepo
 
     @Autowired
     private lateinit var doctorRepo: DoctorRepo
-
-    @Autowired
-    private lateinit var shopItemRepo: ShopItemRepo
 
 
     @Autowired
@@ -109,7 +110,7 @@ class MainController(
                 }
                 val counts: Int = doctorLikeRepo.countGetByDoctorId(d.ownerId)
                 if (counts > 0) {
-                    d.rate = (rateDoctorDto.rate + ((d.rate) * counts)) / counts + 1;
+                    d.rate = ((rateDoctorDto.rate + ((d.rate) * counts))) / (counts + 1)
                 } else {
                     d.rate = rateDoctorDto.rate
                 }
@@ -125,6 +126,41 @@ class MainController(
 
         }
     }
+
+    @GetMapping("/fetchRequests/{requester}")
+    fun fetchRequests(@PathVariable(value = "requester") requester: String): List<AdminRequestsRes>? {
+        try {
+            val user: User? = userRepo.getUserByUuid(requester)
+            if (user != null && user.isAdmin) {
+                var res = adminRequestsRepo.findAll()
+                return res.map { e ->
+                    AdminRequestsRes(
+                        id = e.id,
+                        type = e.type,
+                        time = e.time,
+                        requester = e.requester,
+                        place = placeService.convertPlaceToRes(place = e.place)
+                    )
+                }
+
+            }
+
+        } catch (e: Exception) {
+            logger.error(e.message)
+        }
+        return null
+    }
+
+    @GetMapping("/fetchAdvertising")
+    fun fetchAdvertising(): List<Advertising>? {
+        try {
+            return advertisingRepo.findAll();
+        } catch (e: Exception) {
+            logger.error(e.message)
+        }
+        return null
+    }
+
 
     @PostMapping(path = ["/saveStory"])
     @ResponseBody

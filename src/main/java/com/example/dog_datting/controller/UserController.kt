@@ -35,7 +35,14 @@ class UserController(
             return if (user != null) {
                 if (user.password == loginDto.password) {
                     user.username = user.firstname;
-                    ResponseEntity.ok(UserId(id = user.uuid, username = user.username, name = user.firstname))
+                    ResponseEntity.ok(
+                        UserId(
+                            id = user.uuid,
+                            username = user.username,
+                            name = user.firstname,
+                            isAdmin = user.isAdmin
+                        )
+                    )
                 } else {
                     ResponseEntity.badRequest().build()
                 }

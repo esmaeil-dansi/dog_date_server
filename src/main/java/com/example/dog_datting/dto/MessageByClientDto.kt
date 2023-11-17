@@ -67,8 +67,9 @@ data class NewPostDao(
     val title: String,
     val location: Location = Location(),
     val locationInfo: Location? = null,
+    val topics: List<String> = ArrayList()
 
-    )
+)
 
 
 data class NewPlaceDto(

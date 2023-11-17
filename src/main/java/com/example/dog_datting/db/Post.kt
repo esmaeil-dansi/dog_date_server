@@ -25,5 +25,7 @@ class Post(
     var locationInfo: Location? = null,
     var likesCount: Int = 0,
 
+    var topics: String = ""
 
-    )
+
+)
