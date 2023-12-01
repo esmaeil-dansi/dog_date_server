@@ -24,4 +24,13 @@ data class PlaceRes(
     var location: Location = Location(),
     var locationInfo: Location? = null,
     var type: PlaceType = PlaceType.ALL,
-    )
+)
+
+data class ShopRes(
+    var id: Long = 0,
+    var title: String = "",
+    var ownerId: String = "",
+    var description: String = "",
+    var avatar: String = "",
+    var shopOId: String = ""
+)

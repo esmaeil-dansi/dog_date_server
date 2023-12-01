@@ -4,10 +4,7 @@ import com.example.dog_datting.db.AdminRequestType
 import com.example.dog_datting.db.Advertising
 import com.example.dog_datting.db.User
 import com.example.dog_datting.dto.AdvertisingDto
-import com.example.dog_datting.repo.AdminRequestsRepo
-import com.example.dog_datting.repo.AdvertisingRepo
-import com.example.dog_datting.repo.PlaceRepo
-import com.example.dog_datting.repo.UserRepo
+import com.example.dog_datting.repo.*
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import org.springframework.http.ResponseEntity
@@ -21,6 +18,7 @@ class AdminController(
     private val userRepo: UserRepo,
     private val adminRequestsRepo: AdminRequestsRepo,
     private val placeRepo: PlaceRepo,
+    private val shopRepo: ShopRepo,
     private val advertisingRepo: AdvertisingRepo
 ) {
     val logger: Logger = LogManager.getLogger(MainController::class.java)
@@ -35,10 +33,14 @@ class AdminController(
             if (user != null && user.isAdmin) {
                 val request = adminRequestsRepo.findById(requestId)
                 if (request.isPresent) {
-                    if (request.get().type == AdminRequestType.PLACE) {
+                    return if (request.get().type == AdminRequestType.PLACE) {
                         adminRequestsRepo.delete(request.get())
-                        placeRepo.delete(request.get().place)
-                        return ResponseEntity.ok().build()
+                        placeRepo.delete(request.get().place!!)
+                        ResponseEntity.ok().build()
+                    } else {
+                        adminRequestsRepo.delete(request.get())
+                        shopRepo.delete(request.get().shop!!)
+                        ResponseEntity.ok().build()
                     }
                 }
             }
@@ -62,9 +64,12 @@ class AdminController(
                 val request = adminRequestsRepo.findById(requestId)
                 if (request.isPresent) {
                     adminRequestsRepo.delete(request.get())
-                    if (request.get().type == AdminRequestType.PLACE) {
-                        placeRepo.save(request.get().place.copy(submitted = true))
-                        return ResponseEntity.ok().build()
+                    return if (request.get().type == AdminRequestType.PLACE) {
+                        placeRepo.save(request.get().place!!.copy(submitted = true))
+                        ResponseEntity.ok().build()
+                    } else {
+                        shopRepo.save(request.get().shop!!.copy(submitted = true))
+                        ResponseEntity.ok().build()
                     }
 
 

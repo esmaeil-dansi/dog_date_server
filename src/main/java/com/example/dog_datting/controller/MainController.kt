@@ -4,6 +4,7 @@ import com.example.dog_datting.db.*
 import com.example.dog_datting.db.Location
 import com.example.dog_datting.dto.*
 import com.example.dog_datting.models.AdminRequestsRes
+import com.example.dog_datting.models.ShopRes
 import com.example.dog_datting.repo.*
 import com.example.dog_datting.services.PlaceService
 import org.apache.logging.log4j.LogManager
@@ -20,6 +21,7 @@ class MainController(
     private val userRepo: UserRepo,
     private val advertisingRepo: AdvertisingRepo,
     private val placeService: PlaceService,
+    private val settingRepo: SettingRepo
 ) {
 
     val logger: Logger = LogManager.getLogger(MainController::class.java)
@@ -60,6 +62,22 @@ class MainController(
         }
         return null
 
+    }
+
+    @PostMapping(path = ["/updateSettings"])
+    fun updateSetting(@RequestBody settingsDto: SettingsDto): ResponseEntity<String> {
+        return try {
+            settingRepo.save(Settings(id = 0, showAd = settingsDto.showAd, adLoadingTimer = settingsDto.adLoadingTimer))
+            ResponseEntity.ok().build()
+        } catch (e: Exception) {
+            logger.error(e.message)
+            ResponseEntity.internalServerError().body(e.message);
+        }
+    }
+
+    @GetMapping("/fetchSettings")
+    fun fetchSettings(): Settings? {
+        return settingRepo.findById(0).get()
     }
 
     @PostMapping(path = ["/saveDoctor"])
@@ -132,14 +150,15 @@ class MainController(
         try {
             val user: User? = userRepo.getUserByUuid(requester)
             if (user != null && user.isAdmin) {
-                var res = adminRequestsRepo.findAll()
+                val res = adminRequestsRepo.findAll()
                 return res.map { e ->
                     AdminRequestsRes(
                         id = e.id,
                         type = e.type,
                         time = e.time,
                         requester = e.requester,
-                        place = placeService.convertPlaceToRes(place = e.place)
+                        place = placeService.convertPlaceToRes(place = e.place),
+                        shop = e.shop
                     )
                 }
 

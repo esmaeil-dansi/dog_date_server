@@ -24,6 +24,7 @@ class Post(
     @ManyToOne
     var locationInfo: Location? = null,
     var likesCount: Int = 0,
+    var commentsCount: Int = 0,
 
     var topics: String = ""
 

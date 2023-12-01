@@ -39,3 +39,5 @@ data class NotificationDto(
     val type: String,
     val packetId: String
 )
+
+data class SettingsDto(val showAd: Boolean, val adLoadingTimer: Int)

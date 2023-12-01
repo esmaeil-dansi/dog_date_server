@@ -9,6 +9,7 @@ import com.example.dog_datting.repo.FriendRepo
 import com.example.dog_datting.repo.GalleryRepo
 import com.example.dog_datting.repo.TopicRepo
 import com.example.dog_datting.repo.UserRepo
+import com.example.dog_datting.services.FirebaseMessagingService
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import org.springframework.http.ResponseEntity
@@ -21,6 +22,7 @@ class ProfileController(
     private val userRepo: UserRepo,
     private val friendRepo: FriendRepo,
     private val galleryRepo: GalleryRepo,
+    private val firebaseService: FirebaseMessagingService
 ) {
 
     val logger: Logger = LogManager.getLogger(UserController::class.java)
@@ -48,28 +50,6 @@ class ProfileController(
             return topicRepo.findAll();
         } catch (e: Exception) {
             logger.error(e.message)
-        }
-        return null
-    }
-
-
-    @GetMapping("/getFriends/{requester}")
-    @ResponseBody
-    fun getFriends(@PathVariable(value = "requester") requester: String): List<User>? {
-        try {
-            val user: User? = userRepo.getUserByUuid(requester)
-            var res1 = friendRepo.findByOwner(user!!)
-            val res2 = friendRepo.findByUser(user)
-            var res: List<User> = listOf()
-            if (res1 != null) {
-                res = res1.map { d -> d.user }
-            }
-            if (res2 != null) {
-                res = res + res2.map { f -> f.owner }
-            }
-            return res
-        } catch (e: Exception) {
-            logger.error(e)
         }
         return null
     }
@@ -131,18 +111,88 @@ class ProfileController(
 
     }
 
+    @GetMapping("/getFriends/{requester}")
+    @ResponseBody
+    fun getFriends(@PathVariable(value = "requester") requester: String): List<User>? {
+        try {
+            val user: User? = userRepo.getUserByUuid(requester)
+            if (user != null) {
+                val res1 = friendRepo.findByOwner(user)
+                val res2 = friendRepo.findByUser(user)
+                var res: List<User> = listOf()
+                if (res1 != null) {
+                    res = res1.map { d -> d.user }
+                }
+                if (res2 != null) {
+                    res = res + res2.map { f -> f.owner }
+                }
+                return res
+            }
+
+        } catch (e: Exception) {
+            logger.error(e)
+        }
+        return null
+    }
+
     @PostMapping(path = ["/addFriend/{owner}/{user}"])
     @ResponseBody
     fun addFriend(
         @PathVariable(value = "owner") owner: String,
-        @PathVariable(value = "user") frined: String
+        @PathVariable(value = "user") friend: String
     ): ResponseEntity<String?> {
         try {
-            val o: User? = userRepo.getUserByUuid(owner)
-            val friend: User? = userRepo.getUserByUuid(frined)
-            friendRepo.save(Friends(owner = o!!, user = friend!!))
-            return ResponseEntity.ok().build()
 
+            val ownerUser: User? = userRepo.getUserByUuid(owner)
+            if (ownerUser != null) {
+                val friendUser: User? = userRepo.getUserByUuid(friend)
+                if (friendUser != null) {
+                    if (friendRepo.findFirstByOwnerAndUser(
+                            ownerUser,
+                            friendUser
+                        ) == null && friendRepo.findFirstByOwnerAndUser(
+                            friendUser,
+                            ownerUser
+                        ) == null
+                    )
+                        friendRepo.save(Friends(owner = ownerUser, user = friendUser))
+                    firebaseService.sendNotification(
+                        "New Friend ",
+                        ownerUser.firstname + " has added you as a friend",
+                        friendUser.firebaseToken
+                    );
+
+                    return ResponseEntity.ok().build()
+                }
+            }
+        } catch (e: Exception) {
+            logger.error(e)
+        }
+        return ResponseEntity.badRequest().build()
+
+    }
+
+    @PostMapping(path = ["/removeFriend/{requester}/{user}"])
+    @ResponseBody
+    fun removeFriend(
+        @PathVariable(value = "requester") owner: String,
+        @PathVariable(value = "user") friend: String
+    ): ResponseEntity<String?> {
+        try {
+            val ownerUser: User? = userRepo.getUserByUuid(owner)
+            if (ownerUser != null) {
+                val friendUser: User? = userRepo.getUserByUuid(friend)
+                if (friendUser != null) {
+                    var user = friendRepo.findFirstByOwnerAndUser(ownerUser, friendUser);
+                    if (user == null) {
+                        user = friendRepo.findFirstByOwnerAndUser(friendUser, ownerUser);
+                    }
+                    if (user != null) {
+                        friendRepo.delete(user)
+                        return ResponseEntity.ok().build()
+                    }
+                }
+            }
         } catch (e: Exception) {
             logger.error(e)
         }

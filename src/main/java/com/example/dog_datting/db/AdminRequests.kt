@@ -1,5 +1,7 @@
 package com.example.dog_datting.db
 
+import org.checkerframework.checker.units.qual.N
+import javax.annotation.Nullable
 import javax.persistence.Entity
 import javax.persistence.GeneratedValue
 import javax.persistence.Id
@@ -17,7 +19,12 @@ data class AdminRequests(
     var requester: String = "",
 
     @ManyToOne
-    var place: Place = Place(),
+    @Nullable
+    var place: Place? = null,
+
+    @ManyToOne
+    @Nullable
+    var shop: Shop? = null,
 
     var type: AdminRequestType = AdminRequestType.PLACE
 

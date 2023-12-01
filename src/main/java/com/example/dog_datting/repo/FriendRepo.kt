@@ -10,4 +10,6 @@ interface FriendRepo : JpaRepository<Friends, Long> {
     fun findByOwner(owner: User): List<Friends>?
 
     fun findByUser(user: User): List<Friends>?
+
+    fun findFirstByOwnerAndUser(owner: User, user: User): Friends?
 }

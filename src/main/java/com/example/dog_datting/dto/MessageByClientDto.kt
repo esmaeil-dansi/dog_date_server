@@ -82,3 +82,19 @@ data class NewPlaceDto(
     val type: String = "ALL"
 )
 
+data class NewShopDto(
+    val ownerId: String,
+    val title: String,
+    val shopId: String,
+    val description: String,
+    val avatar: String,
+)
+
+data class NewShopItemDto(
+    val shopId: String,
+    val details: String,
+    val price: Double,
+    val name: String,
+    val fileUuid: String,
+)
+

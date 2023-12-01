@@ -5,7 +5,6 @@ import com.example.dog_datting.dto.*
 import com.example.dog_datting.models.UserId
 import com.example.dog_datting.repo.*
 import com.example.dog_datting.services.EmailService
-import com.example.dog_datting.services.NotificationService
 import com.example.dog_datting.services.UserService
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
@@ -93,7 +92,7 @@ class UserController(
                 val code = kotlin.random.Random.nextInt(10000, 99999)
                 if (u == null) {
                     val user = User()
-                    logger.info("verification cede\t" + code)
+                    logger.info("verification cede\t$code")
                     user.email = loginByEmailDto.email
                     user.username = loginByEmailDto.username
                     user.firstname = loginByEmailDto.name

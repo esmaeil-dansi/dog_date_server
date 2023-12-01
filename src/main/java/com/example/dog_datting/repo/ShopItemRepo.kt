@@ -4,4 +4,5 @@ import com.example.dog_datting.db.ShopItems
 import org.springframework.data.jpa.repository.JpaRepository
 
 interface ShopItemRepo : JpaRepository<ShopItems, Long> {
+    fun findByShopIdOrderByIdDesc(shopId: String): List<ShopItems>?
 }
