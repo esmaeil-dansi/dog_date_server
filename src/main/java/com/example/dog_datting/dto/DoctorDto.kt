@@ -13,5 +13,5 @@ class DoctorDto(
     val locationDetails: String = ""
 )
 
-data class RateDoctorDto(val ownerId: String, val rate: Int, val requester: String)
+data class RateDoctorDto(val id: Long, val rate: Int, val requester: String)
 

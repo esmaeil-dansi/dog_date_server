@@ -4,14 +4,14 @@ import com.example.dog_datting.db.AdminRequestType
 import com.example.dog_datting.db.Advertising
 import com.example.dog_datting.db.User
 import com.example.dog_datting.dto.AdvertisingDto
+import com.example.dog_datting.models.AdminRequestsRes
 import com.example.dog_datting.repo.*
+import com.example.dog_datting.services.PlaceService
+import com.example.dog_datting.services.ShopService
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 
 @RestController
 class AdminController(
@@ -19,7 +19,9 @@ class AdminController(
     private val adminRequestsRepo: AdminRequestsRepo,
     private val placeRepo: PlaceRepo,
     private val shopRepo: ShopRepo,
-    private val advertisingRepo: AdvertisingRepo
+    private val doctorRepo: DoctorRepo,
+    private val shopService: ShopService,
+    private val placeService: PlaceService
 ) {
     val logger: Logger = LogManager.getLogger(MainController::class.java)
 
@@ -67,12 +69,13 @@ class AdminController(
                     return if (request.get().type == AdminRequestType.PLACE) {
                         placeRepo.save(request.get().place!!.copy(submitted = true))
                         ResponseEntity.ok().build()
-                    } else {
+                    } else if (request.get().type == AdminRequestType.SHOP) {
                         shopRepo.save(request.get().shop!!.copy(submitted = true))
                         ResponseEntity.ok().build()
+                    } else {
+                        doctorRepo.save(request.get().doctor!!.copy(submitted = true))
+                        ResponseEntity.ok().build()
                     }
-
-
                 }
 
             }
@@ -85,29 +88,31 @@ class AdminController(
 
     }
 
-    @PostMapping("/createAdvertising/{requester}")
-    fun createAdvertising(
-        @RequestBody adv: AdvertisingDto,
-        @PathVariable(value = "requester") requester: String,
-    ): ResponseEntity<String>? {
+    @GetMapping("/fetchRequests/{requester}")
+    fun fetchRequests(@PathVariable(value = "requester") requester: String): List<AdminRequestsRes>? {
         try {
             val user: User? = userRepo.getUserByUuid(requester)
             if (user != null && user.isAdmin) {
-                advertisingRepo.save(
-                    Advertising(
-                        title = adv.title,
-                        description = adv.description,
-                        fileUuid = adv.fileUuid
+                val res = adminRequestsRepo.findAll()
+                return res.map { e ->
+                    AdminRequestsRes(
+                        id = e.id,
+                        type = e.type,
+                        time = e.time,
+                        doctor = e.doctor,
+                        requester = e.requester,
+                        place = placeService.convertPlaceToRes(place = e.place),
+                        shop = shopService.shopMapper(e.shop),
+
                     )
-                );
+                }
+
             }
-            return ResponseEntity.ok().build()
 
         } catch (e: Exception) {
             logger.error(e.message)
         }
-        return ResponseEntity.internalServerError().build()
-
+        return null
     }
 
 

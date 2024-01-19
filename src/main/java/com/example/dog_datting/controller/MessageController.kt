@@ -2,17 +2,13 @@ package com.example.dog_datting.controller
 
 import com.example.dog_datting.db.Chat
 import com.example.dog_datting.db.Notifications
-import com.example.dog_datting.db.User
 import com.example.dog_datting.dto.ClientPacket
 import com.example.dog_datting.dto.Message
-import com.example.dog_datting.dto.NotificationDto
 import com.example.dog_datting.models.ChatResult
 import com.example.dog_datting.repo.ChatRepo
 import com.example.dog_datting.repo.MessageRepo
 import com.example.dog_datting.repo.NotificationRepo
-import com.example.dog_datting.repo.UserRepo
 import com.example.dog_datting.services.MessageService
-import com.example.dog_datting.services.NotificationService
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import org.springframework.messaging.handler.annotation.MessageMapping
@@ -27,9 +23,7 @@ class MessageController(
     private val messageService: MessageService,
     private val messageRepo: MessageRepo,
     private val chatRepo: ChatRepo,
-    private val userRepo: UserRepo,
     private val notificationRepo: NotificationRepo,
-    private val notificationService: NotificationService,
 ) {
     val logger: Logger = LogManager.getLogger(MessageController::class.java)
     val executorService: ExecutorService = Executors.newFixedThreadPool(10)
@@ -37,7 +31,6 @@ class MessageController(
     @MessageMapping("/private-message")
     fun receivePrivateMessage(@Payload clientPacket: ClientPacket) {
         executorService.execute {
-            logger.info("new private message........")
             if (clientPacket.message != null) {
                 messageService.proxyMessage(message = clientPacket.message)
             } else if (clientPacket.seen != null) {
@@ -53,7 +46,7 @@ class MessageController(
     @ResponseBody
     fun fetchChat(@PathVariable(value = "uuid") uuid: String): List<ChatResult>? {
         try {
-            var res: MutableList<ChatResult> = mutableListOf()
+            val res: MutableList<ChatResult> = mutableListOf()
             chatRepo.getByOwnerIdOrUserId(uuid, uuid)?.forEach { chat ->
                 run {
                     var userId: String = chat.userId
@@ -71,7 +64,7 @@ class MessageController(
                     )
                 }
             }
-            return res;
+            return res
         } catch (e: Exception) {
             print(e.message)
         }
@@ -107,34 +100,27 @@ class MessageController(
         return null
     }
 
-    @PostMapping("/createNotification/{creator}")
-    @ResponseBody
-    fun createNotification(
-        @RequestBody notificationDto: NotificationDto,
-        @PathVariable(value = "creator") creator: String
-    ): Int? {
-        try {
-            val user: User? = userRepo.getUserByUuid(creator)
-            if (user != null) {
-                notificationService.processNotification(notificationDto, user.uuid)
-            }
-
-
-        } catch (e: Exception) {
-            logger.error(e.message)
-        }
-        return null
-    }
 
     @GetMapping("/getAllNotifications/{requester}")
     @ResponseBody
     fun getAllNotifications(@PathVariable(value = "requester") requester: String): List<Notifications>? {
         try {
-            return notificationRepo.getBySenderOrReceiver(requester, requester)
+            return notificationRepo.getByReceiver(requester)
         } catch (e: Exception) {
             logger.error(e)
         }
         return null
+    }
+
+
+    @PostMapping("/seenNotification/{id}")
+    @ResponseBody
+    fun seenNotification(@PathVariable(value = "id") id: Long) {
+        var notification = notificationRepo.findById(id)
+        if (notification.isPresent) {
+            notificationRepo.save(notification.get().copy(isSeen = true))
+        }
+
     }
 
 

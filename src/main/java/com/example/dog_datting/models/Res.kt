@@ -13,6 +13,7 @@ data class PostRes(
     var likes: Int = 0,
     var myFavorite: Boolean = false,
     var topics: List<String> = ArrayList(),
+    var commentsCount: Int = 0
 )
 
 data class PlaceRes(
@@ -27,10 +28,14 @@ data class PlaceRes(
 )
 
 data class ShopRes(
-    var id: Long = 0,
-    var title: String = "",
+    val id: Long = 0,
+    var shopId: String = "",
     var ownerId: String = "",
     var description: String = "",
+    var submitted: Boolean = false,
+    var name: String = "",
     var avatar: String = "",
-    var shopOId: String = ""
-)
+    var link: String = "",
+    var itemPath: List<String> = ArrayList(),
+
+    )

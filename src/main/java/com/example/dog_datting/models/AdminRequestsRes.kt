@@ -1,6 +1,7 @@
 package com.example.dog_datting.models
 
 import com.example.dog_datting.db.AdminRequestType
+import com.example.dog_datting.db.Doctor
 import com.example.dog_datting.db.Shop
 
 data class AdminRequestsRes(
@@ -8,6 +9,7 @@ data class AdminRequestsRes(
     var time: Long = 0,
     var requester: String = "",
     var place: PlaceRes? = null,
-    var shop: Shop? = null,
+    var shop: ShopRes? = null,
+    var doctor: Doctor? = null,
     var type: AdminRequestType = AdminRequestType.PLACE
 )

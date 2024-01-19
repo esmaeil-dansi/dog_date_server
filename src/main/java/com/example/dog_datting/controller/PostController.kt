@@ -7,22 +7,22 @@ import com.example.dog_datting.dto.NewPostDao
 import com.example.dog_datting.models.PostRes
 import com.example.dog_datting.models.PostType
 import com.example.dog_datting.models.SavePostRes
-import com.example.dog_datting.repo.FileInfoRepo
-import com.example.dog_datting.repo.LocationRepo
-import com.example.dog_datting.repo.PostLikesRepo
-import com.example.dog_datting.repo.PostRepo
+import com.example.dog_datting.repo.*
+import com.example.dog_datting.services.PostService
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
-import java.util.ArrayList
+
 
 @RestController
 class PostController(
     private val postRepo: PostRepo,
     private val fileInfoRepo: FileInfoRepo,
     private val locationRepo: LocationRepo,
-    private val postLikesRepo: PostLikesRepo
+    private val postLikesRepo: PostLikesRepo,
+    private val userRepo: UserRepo,
+    private val postService: PostService
 ) {
     val logger: Logger = LogManager.getLogger(MainController::class.java)
 
@@ -30,8 +30,27 @@ class PostController(
     fun fetchPost(
         @PathVariable("lastPostId") lastPostId: Int,
         @PathVariable("requester") requester: String
-    ): List<PostRes> {
-        val posts = postRepo.findByIdGreaterThanOrderByIdDesc(lastPostId.toLong())
+    ): List<PostRes>? {
+        val user = userRepo.getUserByUuid(requester)
+        if (user != null) {
+            return if (user.location != null) {
+                val posts = postRepo.findByIdGreaterThanOrderByIdDesc(lastPostId.toLong())
+                mapPosts(posts?.filter { p -> postService.checkLocation(user.location!!, p) }, requester)
+            } else {
+                mapPosts(postRepo.findByIdGreaterThanOrderByIdDesc(lastPostId.toLong()), requester);
+            }
+        }
+        return ArrayList()
+    }
+
+    @GetMapping(path = ["/getPostById/{id}"])
+    fun getPostById(
+        @PathVariable("id") id: Long,
+    ): PostRes? {
+        return mapPosts(listOf(postRepo.findById(id).get()), "").firstOrNull()
+    }
+
+    fun mapPosts(posts: List<Post>?, requester: String): List<PostRes> {
         val postResList: MutableList<PostRes> = ArrayList()
         if (posts != null) {
             for (post in posts) {
@@ -50,7 +69,9 @@ class PostController(
                     postRes.fileUuids = info.map { f -> f.uuid }
                 }
                 postRes.likes = post.likesCount
-                postRes.myFavorite = (postLikesRepo.getByUserIdAndPost(userId = requester, post = post) != null)
+                postRes.commentsCount = post.commentsCount
+                if (requester.isNotEmpty())
+                    postRes.myFavorite = (postLikesRepo.getByUserIdAndPost(userId = requester, post = post) != null)
                 if (post.locationInfo != null) {
                     postRes.locationInfo = com.example.dog_datting.models.Location(
                         lat = post.locationInfo!!.lat,
@@ -100,15 +121,13 @@ class PostController(
     @ResponseBody
     fun savePost(@RequestBody newPostDao: NewPostDao): ResponseEntity<SavePostRes?> {
         try {
-            val location = locationRepo.save(Location(lon = newPostDao.location.lon, lat = newPostDao.location.lat))
-
             val time: Long = System.currentTimeMillis();
             val post = Post()
             post.description = newPostDao.description
             post.type = getPostType(newPostDao.type)
             post.title = newPostDao.title
             post.ownerId = newPostDao.ownerId
-            post.location = location
+            post.location = locationRepo.save(Location(lon = newPostDao.location.lon, lat = newPostDao.location.lat))
             post.topics = newPostDao.topics.joinToString()
             post.fileUuid = newPostDao.fileUuid
             post.time = time
@@ -118,8 +137,12 @@ class PostController(
                 post.locationInfo = locationInfo
 
             }
-            val id = postRepo.save(post)
-            return ResponseEntity.ok().body(SavePostRes(time = time, id = id.id.toInt()))
+            val savePost = postRepo.save(post)
+
+
+            postService.processPost(savePost);
+
+            return ResponseEntity.ok().body(SavePostRes(time = time, id = savePost.id.toInt()))
         } catch (e: Exception) {
             logger.error(e.message)
         }
@@ -128,23 +151,26 @@ class PostController(
     }
 
     private fun getPostType(key: String): PostType {
-        when (key) {
-            "DENGER" -> return PostType.DENGER
-            "BAY" -> return PostType.BAY
-            "LOSED" -> return PostType.LOSED
-            "PAIRING" -> return PostType.PAIRING
-            "MAINTENANCE" -> return PostType.MAINTENANCE
-            "SALE" -> return PostType.SALE
+        try {
+            return PostType.valueOf(key)
+        } catch (e: Exception) {
+            logger.info(key)
+            logger.error(e)
+
         }
-        return PostType.SALE
+        return PostType.DANGER
     }
 
 
-    @PostMapping(path = ["/deletePost"])
+    @GetMapping(path = ["/deletePost/{id}"])
     @ResponseBody
-    fun deletePost(@RequestBody id: Int): ResponseEntity<String?> {
+    fun deletePost(@PathVariable("id") id: Long): ResponseEntity<String?> {
         return try {
-            postRepo.deleteById(id.toLong())
+            var post = postRepo.findById(id)
+            postLikesRepo.getByPost(post.get())?.forEach { p ->
+                postLikesRepo.delete(p)
+            }
+            postRepo.delete(post.get())
             ResponseEntity.ok().build();
         } catch (e: Exception) {
             logger.error(e.message)

@@ -7,10 +7,7 @@ import com.example.dog_datting.db.Message
 import com.example.dog_datting.db.Notifications
 import com.example.dog_datting.dto.*
 import com.example.dog_datting.models.MessageType
-import com.example.dog_datting.repo.ChatRepo
-import com.example.dog_datting.repo.CommentRepo
-import com.example.dog_datting.repo.MessageRepo
-import com.example.dog_datting.repo.UserRepo
+import com.example.dog_datting.repo.*
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import org.springframework.messaging.simp.SimpMessagingTemplate
@@ -19,6 +16,7 @@ import org.springframework.stereotype.Service
 @Service
 class MessageService(
     private val messageRepo: MessageRepo,
+    private val postRepo: PostRepo,
     private val simpMessagingTemplate: SimpMessagingTemplate,
     private var chatRepository: ChatRepo,
     private var commentRepo: CommentRepo,
@@ -36,9 +34,9 @@ class MessageService(
         if (chat != null) {
             lastMessageId = chat.lastMessageId + 1
         }
-        var last = message.body;
+        var last = message.body
         if (message.type != "TEXT") {
-            last = "file";
+            last = "file"
         }
 
         chat = if (chat != null) {
@@ -90,10 +88,10 @@ class MessageService(
     }
 
     fun sendFirebase(sender: String, receiver: String, body: String) {
-        var user1 = userRepo.getUserByUuid(sender)
-        var user2 = userRepo.getUserByUuid(receiver)
+        val user1 = userRepo.getUserByUuid(sender)
+        val user2 = userRepo.getUserByUuid(receiver)
         if (user1 != null && user2 != null && user2.firebaseToken.isNotEmpty()) {
-            firebaseMessagingService.sendNotification(user1.firstname, body, user2.firebaseToken);
+            firebaseMessagingService.sendNotification(user1.firstname, body, user2.firebaseToken)
         }
 
     }
@@ -125,10 +123,24 @@ class MessageService(
                 time = comment.time
             )
         )
+        updatePostCommentId(comment.postId)
         simpMessagingTemplate.convertAndSendToUser(
             comment.postId, "/comment", comment
         )
 
+    }
+
+    private fun updatePostCommentId(postId: String) {
+        try {
+            val post = postRepo.findById(postId.toLong())
+            if (post.isPresent) {
+                val updated = post.get()
+                updated.commentsCount++
+                postRepo.save(updated)
+            }
+        } catch (e: Exception) {
+            logger.error(e.message)
+        }
     }
 
 

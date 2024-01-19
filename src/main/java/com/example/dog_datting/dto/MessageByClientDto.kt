@@ -88,6 +88,8 @@ data class NewShopDto(
     val shopId: String,
     val description: String,
     val avatar: String,
+    val link: String,
+    val itemsUuid: String
 )
 
 data class NewShopItemDto(

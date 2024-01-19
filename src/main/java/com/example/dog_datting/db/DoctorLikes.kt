@@ -10,7 +10,7 @@ data class DoctorLikes(
     @Id
     var id: Long = 0,
 
-    val doctorId: String = "",
+    val doctorId: Long = 0,
 
     val userId: String = "",
 

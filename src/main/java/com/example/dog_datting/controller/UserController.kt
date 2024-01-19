@@ -246,6 +246,12 @@ class UserController(
         return null
     }
 
+    @PostMapping(path = ["/blockUser/{requester}/{user}"])
+    @ResponseBody
+    fun blockUser(@PathVariable(value = "requester") requester: String, @PathVariable(value = "user") user: String) {
+
+    }
+
     @PostMapping(path = ["/setFirebaseToken/{user}"])
     @ResponseBody
     fun setFirebaseToken(

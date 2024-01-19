@@ -7,5 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository
 interface PostLikesRepo : JpaRepository<PostLikes, Long> {
     fun countGetByPost(post: Post): Int
 
+    fun getByPost(post: Post):List<PostLikes>?
+
     fun getByUserIdAndPost(userId: String, post: Post): PostLikes?
 }

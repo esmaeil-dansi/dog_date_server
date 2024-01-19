@@ -14,5 +14,7 @@ data class Shop(
     var description: String = "",
     var submitted: Boolean = false,
     var name: String = "",
-    var avatar: String = ""
+    var avatar: String = "",
+    var link: String = "",
+    var itemsUuid: String = "",
 )

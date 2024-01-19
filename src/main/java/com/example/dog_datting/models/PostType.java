@@ -1,15 +1,12 @@
 package com.example.dog_datting.models;
 
 public enum PostType {
-    LOSED,
-    DENGER,
-    PAIRING,
+    LOST,
+    DANGER,
+    DATING,
     BAY,
     SALE,
     MAINTENANCE,
-
-
-
-
 }
+
 

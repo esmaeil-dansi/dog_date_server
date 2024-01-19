@@ -160,7 +160,7 @@ class ProfileController(
                         "New Friend ",
                         ownerUser.firstname + " has added you as a friend",
                         friendUser.firebaseToken
-                    );
+                    )
 
                     return ResponseEntity.ok().build()
                 }
@@ -183,12 +183,12 @@ class ProfileController(
             if (ownerUser != null) {
                 val friendUser: User? = userRepo.getUserByUuid(friend)
                 if (friendUser != null) {
-                    var user = friendRepo.findFirstByOwnerAndUser(ownerUser, friendUser);
-                    if (user == null) {
-                        user = friendRepo.findFirstByOwnerAndUser(friendUser, ownerUser);
+                    var friends = friendRepo.findFirstByOwnerAndUser(ownerUser, friendUser);
+                    if (friends == null) {
+                        friends = friendRepo.findFirstByOwnerAndUser(friendUser, ownerUser);
                     }
-                    if (user != null) {
-                        friendRepo.delete(user)
+                    if (friends != null) {
+                        friendRepo.delete(friends)
                         return ResponseEntity.ok().build()
                     }
                 }

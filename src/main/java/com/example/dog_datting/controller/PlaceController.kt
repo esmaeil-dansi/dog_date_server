@@ -5,13 +5,11 @@ import com.example.dog_datting.db.AdminRequests
 import com.example.dog_datting.db.Location
 import com.example.dog_datting.db.Place
 import com.example.dog_datting.dto.NewPlaceDto
-import com.example.dog_datting.dto.NotificationDto
 import com.example.dog_datting.models.PlaceRes
 import com.example.dog_datting.models.PlaceType
 import com.example.dog_datting.repo.AdminRequestsRepo
 import com.example.dog_datting.repo.LocationRepo
 import com.example.dog_datting.repo.PlaceRepo
-import com.example.dog_datting.services.NotificationService
 import com.example.dog_datting.services.PlaceService
 
 import org.apache.logging.log4j.LogManager
@@ -24,7 +22,6 @@ import java.util.ArrayList
 class PlaceController(
     private val placeRepo: PlaceRepo,
     private val locationRepo: LocationRepo,
-    private val notificationService: NotificationService,
     private val adminRequestsRepo: AdminRequestsRepo,
     private val placeService: PlaceService
 ) {
@@ -69,22 +66,8 @@ class PlaceController(
             place.location = location
             place.type = getType(newPlaceDto.type)
             place.fileUuid = newPlaceDto.fileUuid
-            if (newPlaceDto.locationInfo != null) {
-                val locationInfo =
-                    locationRepo.save(Location(lon = newPlaceDto.locationInfo.lon, lat = newPlaceDto.locationInfo.lat))
-                place.locationInfo = locationInfo
 
-            }
             val p = placeRepo.save(place)
-            notificationService.processNotification(
-                NotificationDto(
-                    location = newPlaceDto.location,
-                    type = "NEWS",
-                    fileInfo = "",
-                    packetId = System.currentTimeMillis().toString(),
-                    body = newPlaceDto.description
-                ), sender = newPlaceDto.owner
-            )
             adminRequestsRepo.save(
                 AdminRequests(
                     time = System.currentTimeMillis(),
