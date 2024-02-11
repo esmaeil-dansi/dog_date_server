@@ -1,5 +1,6 @@
 package com.example.dog_datting.dto
 
+import com.example.dog_datting.models.AnimalType
 import com.example.dog_datting.models.Location
 
 data class EmailDto(val email: String, val password: String, val username: String = "", val name: String = "")
@@ -13,7 +14,26 @@ data class PhoneNumberDto(val phoneNumber: String, val password: String)
 data class LoginDto(val email: String = "", val password: String)
 
 data class GalleryDto(val fileInfo: String, val comment: String)
+
+data class UpdateLookReq(val mate: Boolean, val walk: Boolean, val playingPartner: Boolean)
 data class HeathDto(val fileUuid: String, val body: String)
+class DoctorDto(
+    val name: String,
+    val avatarInfo: String,
+    val description: String,
+    val ownerId: String,
+    val location: Location = Location(),
+    val locationInfo: Location? = null,
+    val locationDetails: String = ""
+)
+
+data class RateDoctorDto(val id: Long, val rate: Int, val requester: String)
+data class SearchUserDto(
+    val location: Location,
+    val have: AnimalType,
+    val looking: String = "",
+    val gender: String = ""
+)
 
 data class NewAnimalDto(
     val id: Long = 0,
@@ -32,12 +52,12 @@ data class NewAnimalDto(
     val uid: String = ""
 )
 
-data class NotificationDto(
-    val location: Location? = null,
-    val body: String = "",
-    val fileInfo: String = "",
-    val type: String,
-    val packetId: String
-)
 
 data class SettingsDto(val showAd: Boolean, val adLoadingTimer: Int)
+
+class StoryDto(
+    val userId: String,
+    val fileInfo: String,
+    val description: String,
+    val time: Long
+)

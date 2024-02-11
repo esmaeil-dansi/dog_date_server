@@ -123,5 +123,16 @@ class MessageController(
 
     }
 
+    @GetMapping("/removeNotification/{id}")
+    @ResponseBody
+    fun removeNotification(@PathVariable(value = "id") id: Long) {
+        try {
+            notificationRepo.deleteById(id)
+        } catch (e: Exception) {
+            logger.error(e)
+        }
+
+    }
+
 
 }

@@ -29,5 +29,6 @@ data class Place(
 
     var submitted: Boolean = false,
 
-    var type: PlaceType = PlaceType.ALL
+    var type: PlaceType = PlaceType.ALL,
+    var palaceType: String = ""
 )

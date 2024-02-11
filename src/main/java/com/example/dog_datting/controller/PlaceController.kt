@@ -10,6 +10,7 @@ import com.example.dog_datting.models.PlaceType
 import com.example.dog_datting.repo.AdminRequestsRepo
 import com.example.dog_datting.repo.LocationRepo
 import com.example.dog_datting.repo.PlaceRepo
+import com.example.dog_datting.repo.UserRepo
 import com.example.dog_datting.services.PlaceService
 
 import org.apache.logging.log4j.LogManager
@@ -23,7 +24,8 @@ class PlaceController(
     private val placeRepo: PlaceRepo,
     private val locationRepo: LocationRepo,
     private val adminRequestsRepo: AdminRequestsRepo,
-    private val placeService: PlaceService
+    private val placeService: PlaceService,
+    private val userRepo: UserRepo
 ) {
     val logger: Logger = LogManager.getLogger(PlaceController::class.java)
 
@@ -40,43 +42,41 @@ class PlaceController(
         return resList
     }
 
-    private fun getType(key: String): PlaceType {
-        when (key) {
-            "ALL" -> return PlaceType.ALL
-            "DOG" -> return PlaceType.DOG
-            "CAT" -> return PlaceType.CAT
-            "RABBIT" -> return PlaceType.RABBIT
-            "HORSE" -> return PlaceType.HORSE
-
-        }
-        return PlaceType.ALL
-    }
-
 
     @PostMapping(path = ["/createNewPlace"])
     @ResponseBody
     fun createNewPlace(@RequestBody newPlaceDto: NewPlaceDto): ResponseEntity<Long?> {
         try {
-
+            var id: Long = 1
             val location = locationRepo.save(Location(lon = newPlaceDto.location.lon, lat = newPlaceDto.location.lat))
             val place = Place()
             place.description = newPlaceDto.description
             place.name = newPlaceDto.name
             place.owner = newPlaceDto.owner
             place.location = location
-            place.type = getType(newPlaceDto.type)
+            place.palaceType = newPlaceDto.type
             place.fileUuid = newPlaceDto.fileUuid
 
-            val p = placeRepo.save(place)
-            adminRequestsRepo.save(
-                AdminRequests(
-                    time = System.currentTimeMillis(),
-                    type = AdminRequestType.PLACE,
-                    place = p,
-                    requester = newPlaceDto.owner
+            val usr = userRepo.getUserByUuid(newPlaceDto.owner);
+            if (usr != null && usr.isAdmin) {
+                place.submitted = true;
+                id = (placeRepo.save(place)).id
+
+            } else {
+                val p = placeRepo.save(place)
+                adminRequestsRepo.save(
+                    AdminRequests(
+                        time = System.currentTimeMillis(),
+                        type = AdminRequestType.PLACE,
+                        place = p,
+                        requester = newPlaceDto.owner
+                    )
                 )
-            )
-            return ResponseEntity.ok().body(p.id)
+                id = p.id
+            }
+
+
+            return ResponseEntity.ok().body(id)
         } catch (e: Exception) {
             logger.error(e.message)
         }

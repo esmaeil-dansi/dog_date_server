@@ -2,10 +2,13 @@ package com.example.dog_datting.controller
 
 import com.example.dog_datting.db.*
 import com.example.dog_datting.dto.*
+import com.example.dog_datting.models.AnimalType
+import com.example.dog_datting.models.Gender
 import com.example.dog_datting.models.UserId
+import com.example.dog_datting.models.UserRes
 import com.example.dog_datting.repo.*
 import com.example.dog_datting.services.EmailService
-import com.example.dog_datting.services.UserService
+import com.example.dog_datting.services.LocationService
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import org.springframework.http.ResponseEntity
@@ -16,9 +19,10 @@ import java.util.*
 @RestController
 class UserController(
     private val userRepo: UserRepo,
-    private val userService: UserService,
     private val emailService: EmailService,
     private val locationRepo: LocationRepo,
+    private val locationService: LocationService,
+    private val animalRepo: AnimalRepo
 ) {
     val logger: Logger = LogManager.getLogger(UserController::class.java)
 
@@ -67,7 +71,7 @@ class UserController(
             } else {
                 val rand = Random()
                 val code = rand.nextInt(5)
-                userService.sendVerificationCodeToPhone(loginByPhoneNumberDto.phoneNumber, code.toString())
+//                userService.sendVerificationCodeToPhone(loginByPhoneNumberDto.phoneNumber, code.toString())
                 val user = User()
                 user.phoneNumber = loginByPhoneNumberDto.phoneNumber
                 user.verificationCode = code
@@ -79,6 +83,7 @@ class UserController(
         return ResponseEntity.badRequest().build()
     }
 
+
     @PostMapping(path = ["/singingByEmail"])
     @ResponseBody
     fun singingByEmail(@RequestBody loginByEmailDto: EmailDto): ResponseEntity<String> {
@@ -86,7 +91,7 @@ class UserController(
             val u: User? = userRepo.getUserByEmail(loginByEmailDto.email)
 
             return if (u != null && u.uuid.isNotEmpty()) {
-                logger.info("user is Exit.....")
+                logger.info("user is exit.....")
                 ResponseEntity.badRequest().build()
             } else {
                 val code = kotlin.random.Random.nextInt(10000, 99999)
@@ -114,6 +119,25 @@ class UserController(
             logger.error(e.message)
         }
         return ResponseEntity.internalServerError().build()
+    }
+
+    @GetMapping("/sendActivity/{user}")
+    @ResponseBody
+    fun sendActivity(
+        @PathVariable(value = "user") uid: String
+    ): ResponseEntity<String?> {
+        try {
+            val user: User? = userRepo.getUserByUuid(uid)
+            if (user != null) {
+                userRepo.save(user.copy(lastConnectionTime = System.currentTimeMillis()));
+                return ResponseEntity.ok().build()
+            }
+            return ResponseEntity.badRequest().build()
+
+        } catch (e: Exception) {
+            return ResponseEntity.internalServerError().build();
+        }
+
     }
 
 
@@ -211,9 +235,9 @@ class UserController(
 
     @GetMapping("/getAllUser")
     @ResponseBody
-    fun getAllUser(): List<User>? {
+    fun getAllUser(): List<UserRes>? {
         try {
-            return userRepo.findAll()
+            return (userRepo.findAll().map { u -> getUserRes(u) })
         } catch (e: Exception) {
             logger.error(e)
         }
@@ -236,10 +260,9 @@ class UserController(
 
     @GetMapping("/getUser/{user}")
     @ResponseBody
-    fun getUser(@PathVariable(value = "user") user: String): User? {
+    fun getUser(@PathVariable(value = "user") user: String): UserRes? {
         try {
-            return userRepo.getUserByUuid(user)
-
+            return getUserRes(userRepo.getUserByUuid(user)!!)
         } catch (e: Exception) {
             logger.error(e)
         }
@@ -272,5 +295,143 @@ class UserController(
         }
         return ResponseEntity.badRequest().build()
 
+    }
+
+    @PostMapping(path = ["/updateCertified/{userId}"])
+    @ResponseBody
+    fun updateCertified(
+        @RequestBody certified: String,
+        @PathVariable(value = "userId") userId: String,
+    ): ResponseEntity<String?> {
+        try {
+            val user: User? = userRepo.getUserByUuid(userId)
+            if (user != null) {
+                user.certified = certified
+                userRepo.save(user)
+                return ResponseEntity.ok().build()
+            }
+
+        } catch (e: Exception) {
+            logger.error(e)
+        }
+        return ResponseEntity.badRequest().build()
+
+    }
+
+
+    @PostMapping(path = ["/updateCasually/{userId}"])
+    @ResponseBody
+    fun updateCasually(
+        @RequestBody value: String,
+        @PathVariable(value = "userId") userId: String,
+
+        ): ResponseEntity<String?> {
+        try {
+            val user: User? = userRepo.getUserByUuid(userId)
+            if (user != null) {
+                user.casually = value
+                userRepo.save(user)
+                return ResponseEntity.ok().build()
+            }
+
+        } catch (e: Exception) {
+            logger.error(e)
+        }
+        return ResponseEntity.badRequest().build()
+
+    }
+
+
+    @PostMapping(path = ["/updateLook/{userId}"])
+    @ResponseBody
+    fun updateLook(
+        @RequestBody updateLookReq: UpdateLookReq,
+        @PathVariable(value = "userId") userId: String,
+
+        ): ResponseEntity<String?> {
+        try {
+            val user: User? = userRepo.getUserByUuid(userId)
+            if (user != null) {
+                user.mate = updateLookReq.mate
+                user.walk = updateLookReq.walk
+                user.playingPartner = updateLookReq.playingPartner
+                userRepo.save(
+                    user
+                )
+                return ResponseEntity.ok().build()
+            }
+
+        } catch (e: Exception) {
+            logger.error(e)
+        }
+        return ResponseEntity.badRequest().build()
+    }
+
+
+    @PostMapping("/searchInUsers")
+    @ResponseBody
+    fun searchInUsers(@RequestBody searchUserDto: SearchUserDto): List<UserRes>? {
+        try {
+            val users = userRepo.findByLocationIsNotNull()
+            if (users != null) {
+                return users.filter { u ->
+                    locationService.checkLocation(
+                        u.location!!,
+                        Location(lat = searchUserDto.location.lat, lon = searchUserDto.location.lon)
+                    )
+
+                }.filter { u ->
+                    (u.mate && searchUserDto.looking == "Mate") ||
+                            (u.walk && searchUserDto.looking == "Walk") ||
+                            (u.playingPartner && searchUserDto.looking == "Play")
+                            ||
+                            (searchUserDto.looking == "Certified pet-sitter" && u.certified.contains(
+                                searchUserDto.have.name
+                            )) || (searchUserDto.looking == "Private non-certified pet-sitter" && u.casually.contains(
+                        searchUserDto.have.name
+                    ))
+                }.filter { u ->
+                    if (searchUserDto.gender.isEmpty() || searchUserDto.gender == "") {
+                        u.uuid.isNotEmpty()
+                    } else {
+                        checkAnimalAndGender(u.uuid, searchUserDto.have, Gender.valueOf(searchUserDto.gender))
+                    }
+
+                }.map { u -> getUserRes(u) }
+            }
+
+
+        } catch (e: Exception) {
+            logger.error(e)
+        }
+        return null
+
+    }
+
+
+    fun checkAnimalAndGender(userId: String, animalType: AnimalType, gender: Gender): Boolean {
+        try {
+            val animals = animalRepo.getByOwner(userId) ?: return false
+            return !animals.none { a -> a.type == animalType && a.sex == gender }
+        } catch (e: Exception) {
+            logger.error(e)
+            return false
+        }
+
+    }
+
+    fun getUserRes(user: User): UserRes {
+        return UserRes(
+            username = user.username,
+            firstname = user.firstname,
+            info = user.info,
+            uuid = user.uuid,
+            walk = user.walk,
+            mate = user.mate,
+            playingPartner = user.playingPartner,
+            certified = user.certified,
+            casually = user.casually,
+            interests = user.interests
+        )
     }
 }

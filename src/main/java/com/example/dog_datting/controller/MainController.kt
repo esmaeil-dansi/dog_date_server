@@ -16,55 +16,11 @@ import org.springframework.web.bind.annotation.*
 
 @RestController
 class MainController(
-    private val commentRepo: CommentRepo,
-    private val settingRepo: SettingRepo,
+
     private val storyRepo: StoryRepo
 ) {
 
     val logger: Logger = LogManager.getLogger(MainController::class.java)
-
-
-    @GetMapping(path = ["/fetchComments/{postId}"])
-    fun fetchComments(@PathVariable("postId") postId: Int): List<Comment>? {
-        try {
-            return commentRepo.getCommentByPostIdOrderByTimeDesc(postId = postId.toString())
-        } catch (e: Exception) {
-            logger.error(e.message)
-        }
-        return null
-
-    }
-
-    @PostMapping(path = ["/updateSettings"])
-    fun updateSetting(@RequestBody settingsDto: SettingsDto): ResponseEntity<String> {
-        return try {
-            var record = settingRepo.findById(1)
-            if (record.isPresent) {
-                settingRepo.save(
-                    record.get().copy(showAd = settingsDto.showAd, adLoadingTimer = settingsDto.adLoadingTimer)
-                )
-
-            } else {
-                settingRepo.save(
-                    Settings(
-                        id = 1,
-                        showAd = settingsDto.showAd,
-                        adLoadingTimer = settingsDto.adLoadingTimer
-                    )
-                )
-
-            }
-            ResponseEntity.ok().build()
-        } catch (e: Exception) {
-            logger.error(e.message)
-            ResponseEntity.internalServerError().body(e.message)
-        }
-    }
-
-    @GetMapping("/fetchSettings")
-    fun fetchSettings(): Settings? {
-        return settingRepo.findById(1).get()
-    }
 
 
     @PostMapping(path = ["/saveStory"])

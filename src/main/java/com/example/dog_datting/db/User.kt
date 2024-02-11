@@ -22,5 +22,12 @@ data class User(
     var location: Location? = null,
     var firebaseToken: String = "",
     var isAdmin: Boolean = false,
-    var lastConnectionTime: Long = 0
-)
+    var lastConnectionTime: Long = 0,
+    var mate: Boolean = false,
+    var walk: Boolean = false,
+    var playingPartner: Boolean = false,
+    var certified: String = "",
+    var casually: String = "",
+
+
+    )

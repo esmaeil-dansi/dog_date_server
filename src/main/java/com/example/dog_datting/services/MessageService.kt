@@ -100,6 +100,7 @@ class MessageService(
         simpMessagingTemplate.convertAndSendToUser(
             to, "/private", Packet(notification = notifications)
         )
+
     }
 
     fun processSeen(seen: Seen) {

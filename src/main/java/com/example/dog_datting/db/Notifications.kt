@@ -13,6 +13,7 @@ data class Notifications(
     var receiver: String = "",
     var postId: Long = 0,
     var placeId: Long = 0,
+    var animalId: Long = 0,
     var type: NotificationType = NotificationType.NEWS,
     var isSeen: Boolean = false,
     var time: Long = 0

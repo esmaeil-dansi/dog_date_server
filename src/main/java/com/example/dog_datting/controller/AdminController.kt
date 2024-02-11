@@ -1,11 +1,12 @@
 package com.example.dog_datting.controller
 
 import com.example.dog_datting.db.AdminRequestType
-import com.example.dog_datting.db.Advertising
+import com.example.dog_datting.db.Settings
 import com.example.dog_datting.db.User
-import com.example.dog_datting.dto.AdvertisingDto
+import com.example.dog_datting.dto.SettingsDto
 import com.example.dog_datting.models.AdminRequestsRes
 import com.example.dog_datting.repo.*
+import com.example.dog_datting.services.FirebaseMessagingService
 import com.example.dog_datting.services.PlaceService
 import com.example.dog_datting.services.ShopService
 import org.apache.logging.log4j.LogManager
@@ -21,7 +22,9 @@ class AdminController(
     private val shopRepo: ShopRepo,
     private val doctorRepo: DoctorRepo,
     private val shopService: ShopService,
-    private val placeService: PlaceService
+    private val placeService: PlaceService,
+    private val settingRepo: SettingRepo,
+    private val firebaseMessagingService: FirebaseMessagingService
 ) {
     val logger: Logger = LogManager.getLogger(MainController::class.java)
 
@@ -55,6 +58,37 @@ class AdminController(
 
     }
 
+    @PostMapping(path = ["/updateSettings"])
+    fun updateSetting(@RequestBody settingsDto: SettingsDto): ResponseEntity<String> {
+        return try {
+            var record = settingRepo.findById(1)
+            if (record.isPresent) {
+                settingRepo.save(
+                    record.get().copy(showAd = settingsDto.showAd, adLoadingTimer = settingsDto.adLoadingTimer)
+                )
+
+            } else {
+                settingRepo.save(
+                    Settings(
+                        id = 1,
+                        showAd = settingsDto.showAd,
+                        adLoadingTimer = settingsDto.adLoadingTimer
+                    )
+                )
+
+            }
+            ResponseEntity.ok().build()
+        } catch (e: Exception) {
+            logger.error(e.message)
+            ResponseEntity.internalServerError().body(e.message)
+        }
+    }
+
+    @GetMapping("/fetchSettings")
+    fun fetchSettings(): Settings? {
+        return settingRepo.findById(1).get()
+    }
+
     @PostMapping("/submitRequest/{requestId}/{requester}")
     fun submitRequest(
         @PathVariable(value = "requester") requester: String,
@@ -68,9 +102,11 @@ class AdminController(
                     adminRequestsRepo.delete(request.get())
                     return if (request.get().type == AdminRequestType.PLACE) {
                         placeRepo.save(request.get().place!!.copy(submitted = true))
+                        sendNotificationToPlaceOwner(request.get().place!!.owner)
                         ResponseEntity.ok().build()
                     } else if (request.get().type == AdminRequestType.SHOP) {
                         shopRepo.save(request.get().shop!!.copy(submitted = true))
+                        sendNotificationToShopOwner(request.get().shop!!.ownerId)
                         ResponseEntity.ok().build()
                     } else {
                         doctorRepo.save(request.get().doctor!!.copy(submitted = true))
@@ -84,6 +120,42 @@ class AdminController(
         } catch (e: Exception) {
             logger.error(e.message)
             return ResponseEntity.internalServerError().build()
+        }
+
+    }
+
+    private fun sendNotificationToPlaceOwner(userId: String) {
+        try {
+            val user = userRepo.getUserByUuid(userId)
+            if (user != null) {
+                firebaseMessagingService.sendNotification(
+                    "New place",
+                    "Your place registration request has been approved.",
+                    user.firebaseToken
+                )
+            }
+
+
+        } catch (e: Exception) {
+            logger.error(e.message)
+        }
+
+    }
+
+    private fun sendNotificationToShopOwner(userId: String) {
+        try {
+            val user = userRepo.getUserByUuid(userId)
+            if (user != null) {
+                firebaseMessagingService.sendNotification(
+                    "New shop",
+                    "Your shop registration request has been approved.",
+                    user.firebaseToken
+                )
+            }
+
+
+        } catch (e: Exception) {
+            logger.error(e.message)
         }
 
     }
@@ -104,7 +176,7 @@ class AdminController(
                         place = placeService.convertPlaceToRes(place = e.place),
                         shop = shopService.shopMapper(e.shop),
 
-                    )
+                        )
                 }
 
             }

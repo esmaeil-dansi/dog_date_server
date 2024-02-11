@@ -5,10 +5,7 @@ import com.example.dog_datting.dto.NewShopDto
 import com.example.dog_datting.dto.NewShopItemDto
 import com.example.dog_datting.models.ShopItemRes
 import com.example.dog_datting.models.ShopRes
-import com.example.dog_datting.repo.AdminRequestsRepo
-import com.example.dog_datting.repo.FileInfoRepo
-import com.example.dog_datting.repo.ShopItemRepo
-import com.example.dog_datting.repo.ShopRepo
+import com.example.dog_datting.repo.*
 import com.example.dog_datting.services.ShopService
 import org.apache.logging.log4j.LogManager
 import org.springframework.http.ResponseEntity
@@ -21,7 +18,8 @@ class ShopController(
     private val shopRepo: ShopRepo,
     private val fileInfoRepo: FileInfoRepo,
     private val shopItemRepo: ShopItemRepo,
-    private val shopService: ShopService
+    private val shopService: ShopService,
+    private val userRepo: UserRepo
 
 ) {
 
@@ -40,15 +38,23 @@ class ShopController(
             shop.link = shopDto.link
             shop.itemsUuid = shopDto.itemsUuid
             val s = shopRepo.save(shop)
-            adminRequestsRepo.save(
-                AdminRequests(
-                    time = System.currentTimeMillis(),
-                    type = AdminRequestType.SHOP,
-                    shop = s,
-                    requester = shopDto.ownerId
+            val user = userRepo.getUserByUuid(shopDto.ownerId)
+            if (user != null && user.isAdmin) {
+                s.submitted = true
+                shopRepo.save(s)
+                return ResponseEntity.ok().body(s.id)
+            } else {
+                adminRequestsRepo.save(
+                    AdminRequests(
+                        time = System.currentTimeMillis(),
+                        type = AdminRequestType.SHOP,
+                        shop = s,
+                        requester = shopDto.ownerId
+                    )
                 )
-            )
-            return ResponseEntity.ok().body(s.id)
+                return ResponseEntity.ok().body(s.id)
+            }
+
         } catch (e: Exception) {
             logger.error(e.message)
         }

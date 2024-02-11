@@ -79,7 +79,7 @@ data class NewPlaceDto(
     val name: String,
     val location: Location = Location(),
     val locationInfo: Location? = null,
-    val type: String = "ALL"
+    val type: String = ""
 )
 
 data class NewShopDto(

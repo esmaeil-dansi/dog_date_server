@@ -1,5 +1,6 @@
 package com.example.dog_datting.controller
 
+import com.example.dog_datting.db.Comment
 import com.example.dog_datting.db.Location
 import com.example.dog_datting.db.Post
 import com.example.dog_datting.db.PostLikes
@@ -8,6 +9,7 @@ import com.example.dog_datting.models.PostRes
 import com.example.dog_datting.models.PostType
 import com.example.dog_datting.models.SavePostRes
 import com.example.dog_datting.repo.*
+import com.example.dog_datting.services.LocationService
 import com.example.dog_datting.services.PostService
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
@@ -22,7 +24,9 @@ class PostController(
     private val locationRepo: LocationRepo,
     private val postLikesRepo: PostLikesRepo,
     private val userRepo: UserRepo,
-    private val postService: PostService
+    private val postService: PostService,
+    private val locationService: LocationService,
+    private val commentRepo: CommentRepo,
 ) {
     val logger: Logger = LogManager.getLogger(MainController::class.java)
 
@@ -35,7 +39,7 @@ class PostController(
         if (user != null) {
             return if (user.location != null) {
                 val posts = postRepo.findByIdGreaterThanOrderByIdDesc(lastPostId.toLong())
-                mapPosts(posts?.filter { p -> postService.checkLocation(user.location!!, p) }, requester)
+                mapPosts(posts?.filter { p -> locationService.checkLocation(user.location!!, p.location) }, requester)
             } else {
                 mapPosts(postRepo.findByIdGreaterThanOrderByIdDesc(lastPostId.toLong()), requester);
             }
@@ -138,8 +142,6 @@ class PostController(
 
             }
             val savePost = postRepo.save(post)
-
-
             postService.processPost(savePost);
 
             return ResponseEntity.ok().body(SavePostRes(time = time, id = savePost.id.toInt()))
@@ -147,6 +149,17 @@ class PostController(
             logger.error(e.message)
         }
         return ResponseEntity.internalServerError().build()
+
+    }
+
+    @GetMapping(path = ["/fetchComments/{postId}"])
+    fun fetchComments(@PathVariable("postId") postId: Int): List<Comment>? {
+        try {
+            return commentRepo.getCommentByPostIdOrderByTimeDesc(postId = postId.toString())
+        } catch (e: Exception) {
+            logger.error(e.message)
+        }
+        return null
 
     }
 

@@ -15,13 +15,14 @@ class DoctorController(
     private val doctorRepo: DoctorRepo,
     private val doctorLikeRepo: DoctorLikeRepo,
     private val adminRequestsRepo: AdminRequestsRepo,
+    private val userRepo: UserRepo
 ) {
     val logger: Logger = LogManager.getLogger(MainController::class.java)
 
 
     @PostMapping(path = ["/saveDoctor"])
     @ResponseBody
-    fun saveDoctor(@RequestBody doctorDto: DoctorDto): ResponseEntity<String?> {
+    fun saveDoctor(@RequestBody doctorDto: DoctorDto): ResponseEntity<Long> {
         try {
 
             val doctor = doctorRepo.save(
@@ -34,15 +35,23 @@ class DoctorController(
                     locationDetails = doctorDto.locationDetails
                 )
             )
-            adminRequestsRepo.save(
-                AdminRequests(
-                    time = System.currentTimeMillis(),
-                    type = AdminRequestType.DOCTOR,
-                    doctor = doctor,
-                    requester = doctorDto.ownerId
-                )
-            );
-            return ResponseEntity.ok().build()
+            val user = userRepo.getUserByUuid(doctorDto.ownerId)
+            if (user != null && user.isAdmin) {
+                doctor.submitted = true
+                doctorRepo.save(doctor)
+                return ResponseEntity.ok().body(doctor.id)
+            } else {
+                adminRequestsRepo.save(
+                    AdminRequests(
+                        time = System.currentTimeMillis(),
+                        type = AdminRequestType.DOCTOR,
+                        doctor = doctor,
+                        requester = doctorDto.ownerId
+                    )
+                );
+                return ResponseEntity.ok().body(doctor.id)
+            }
+
 
         } catch (e: Exception) {
             logger.error(e.message)
@@ -72,11 +81,11 @@ class DoctorController(
                 val d: Doctor = doctor.get()
 
                 val dr: DoctorLikes? =
-                    doctorLikeRepo.getByUserIdAndDoctorId(doctorId = d.ownerId, userId = rateDoctorDto.requester)
+                    doctorLikeRepo.getByUserIdAndDoctorId(doctorId = d.id, userId = rateDoctorDto.requester)
                 if (dr != null) {
                     doctorLikeRepo.delete(dr)
                 }
-                val counts: Int = doctorLikeRepo.countGetByDoctorId(d.ownerId)
+                val counts: Int = doctorLikeRepo.countGetByDoctorId(d.id)
                 if (counts > 0) {
                     d.rate = ((rateDoctorDto.rate + ((d.rate) * counts))) / (counts + 1)
                 } else {
