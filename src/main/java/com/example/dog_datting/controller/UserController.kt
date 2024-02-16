@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*
 import java.util.*
 
 
+@Suppress("NAME_SHADOWING")
 @RestController
 class UserController(
     private val userRepo: UserRepo,

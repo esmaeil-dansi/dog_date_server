@@ -1,26 +1,34 @@
 package com.example.dog_datting.controller
 
-import com.example.dog_datting.db.*
-import com.example.dog_datting.db.Location
-import com.example.dog_datting.dto.*
-import com.example.dog_datting.models.AdminRequestsRes
-import com.example.dog_datting.repo.*
-import com.example.dog_datting.services.PlaceService
-import com.example.dog_datting.services.ShopService
+import com.example.dog_datting.db.Story
+import com.example.dog_datting.dto.StoryDto
+import com.example.dog_datting.repo.StoryRepo
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.ResponseEntity
+import org.springframework.stereotype.Controller
+import org.springframework.ui.Model
 import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.GetMapping
 
 
-@RestController
+@Controller
 class MainController(
 
     private val storyRepo: StoryRepo
 ) {
 
     val logger: Logger = LogManager.getLogger(MainController::class.java)
+
+    @GetMapping("/privacy")
+    fun privacy(model: Model): String {
+        return "privacy"
+    }
+
+    @GetMapping("/terms_of_use")
+    fun terms(model: Model): String {
+        return "terms_of_use"
+    }
 
 
     @PostMapping(path = ["/saveStory"])

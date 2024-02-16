@@ -5,13 +5,12 @@ import com.google.auth.oauth2.GoogleCredentials
 import com.google.firebase.FirebaseApp
 import com.google.firebase.FirebaseOptions
 import com.google.firebase.messaging.FirebaseMessaging
-import org.apache.logging.log4j.LogManager
-import org.apache.logging.log4j.Logger
+import org.springframework.boot.SpringApplication
+
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.springframework.context.annotation.Bean
 import org.springframework.core.io.ClassPathResource
-import java.io.IOException
 
 @SpringBootApplication
 class DogDatting {
@@ -29,6 +28,7 @@ class DogDatting {
 
 }
 
-fun main(args: Array<String>) {
-    runApplication<DogDatting>(*args)
+ fun    main(args: Array<String>) {
+    SpringApplication.run(DogDatting::class.java, *args)
+//    runApplication<DogDatting>(*args)
 }
