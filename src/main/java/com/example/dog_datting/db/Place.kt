@@ -30,5 +30,7 @@ data class Place(
     var submitted: Boolean = false,
 
     var type: PlaceType = PlaceType.ALL,
-    var palaceType: String = ""
+    var palaceType: String = "",
+
+    var phone: String = ""
 )

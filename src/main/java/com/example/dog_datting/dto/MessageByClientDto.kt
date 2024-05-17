@@ -74,12 +74,14 @@ data class NewPostDao(
 
 data class NewPlaceDto(
     val fileUuid: String,
-    val owner: String,
     val description: String,
     val name: String,
     val location: Location = Location(),
     val locationInfo: Location? = null,
-    val type: String = ""
+    val type: String = "",
+    val requester: String = "",
+    val phone: String = "",
+    val email: String = "",
 )
 
 data class NewShopDto(

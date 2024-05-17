@@ -1,6 +1,8 @@
 package com.example.dog_datting
 
 
+
+import com.example.dog_datting.utils.JwtUtil
 import com.google.auth.oauth2.GoogleCredentials
 import com.google.firebase.FirebaseApp
 import com.google.firebase.FirebaseOptions
@@ -28,7 +30,6 @@ class DogDatting {
 
 }
 
- fun    main(args: Array<String>) {
+fun main(args: Array<String>) {
     SpringApplication.run(DogDatting::class.java, *args)
-//    runApplication<DogDatting>(*args)
 }

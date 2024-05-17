@@ -6,12 +6,14 @@ import com.example.dog_datting.models.Location
 data class EmailDto(val email: String, val password: String, val username: String = "", val name: String = "")
 
 data class VerificationDto(val user: String, val code: Int)
+data class VerificationRes(val uid: String, val accessToken: String)
 
 data class RecoveryDto(val email: String, val password: String, val code: Int)
 
 data class PhoneNumberDto(val phoneNumber: String, val password: String)
 
 data class LoginDto(val email: String = "", val password: String)
+
 
 data class GalleryDto(val fileInfo: String, val comment: String)
 
@@ -21,10 +23,12 @@ class DoctorDto(
     val name: String,
     val avatarInfo: String,
     val description: String,
-    val ownerId: String,
+    val phone: String,
+    val email: String,
     val location: Location = Location(),
     val locationInfo: Location? = null,
-    val locationDetails: String = ""
+    val locationDetails: String = "",
+    val requester: String = ""
 )
 
 data class RateDoctorDto(val id: Long, val rate: Int, val requester: String)
@@ -53,7 +57,7 @@ data class NewAnimalDto(
 )
 
 
-data class SettingsDto(val showAd: Boolean, val adLoadingTimer: Int)
+data class SettingsDto(val showAd: Boolean, val adLoadingTimer: Int, val openAppId: String, val bannerId: String)
 
 class StoryDto(
     val userId: String,

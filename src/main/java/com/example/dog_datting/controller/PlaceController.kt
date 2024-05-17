@@ -47,17 +47,23 @@ class PlaceController(
     @ResponseBody
     fun createNewPlace(@RequestBody newPlaceDto: NewPlaceDto): ResponseEntity<Long?> {
         try {
+            var owner = ""
+            val user = userRepo.getUserByEmail(newPlaceDto.email)
+            if (user != null) {
+                owner = user.uuid;
+            }
             var id: Long = 1
             val location = locationRepo.save(Location(lon = newPlaceDto.location.lon, lat = newPlaceDto.location.lat))
             val place = Place()
             place.description = newPlaceDto.description
             place.name = newPlaceDto.name
-            place.owner = newPlaceDto.owner
+            place.owner = owner
             place.location = location
+            place.phone = newPlaceDto.phone
             place.palaceType = newPlaceDto.type
             place.fileUuid = newPlaceDto.fileUuid
 
-            val usr = userRepo.getUserByUuid(newPlaceDto.owner);
+            val usr = userRepo.getUserByUuid(newPlaceDto.requester);
             if (usr != null && usr.isAdmin) {
                 place.submitted = true;
                 id = (placeRepo.save(place)).id
@@ -69,7 +75,7 @@ class PlaceController(
                         time = System.currentTimeMillis(),
                         type = AdminRequestType.PLACE,
                         place = p,
-                        requester = newPlaceDto.owner
+                        requester = newPlaceDto.requester
                     )
                 )
                 id = p.id

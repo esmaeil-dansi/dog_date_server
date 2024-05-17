@@ -4,7 +4,11 @@ import com.example.dog_datting.db.AdminRequestType
 import com.example.dog_datting.db.Doctor
 
 data class UserId(
-    val id: String = "", val username: String = "", val name: String = "", val isAdmin: Boolean = false
+    val id: String = "",
+    val username: String = "",
+    val name: String = "",
+    val isAdmin: Boolean = false,
+    val token: String = ""
 )
 
 data class PostRes(
@@ -13,7 +17,7 @@ data class PostRes(
     var title: String = "",
     var time: Long = 0,
     var description: String = "",
-    var type: PostType = PostType.BAY,
+    var type: PostType = PostType.LOST,
     var fileUuids: List<String> = ArrayList(),
     var location: Location = Location(),
     var locationInfo: Location? = null,
@@ -32,6 +36,7 @@ data class PlaceRes(
     var location: Location = Location(),
     var locationInfo: Location? = null,
     var type: String = "",
+    var phone: String = ""
 )
 
 data class ShopRes(

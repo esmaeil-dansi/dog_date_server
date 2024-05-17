@@ -24,18 +24,24 @@ class DoctorController(
     @ResponseBody
     fun saveDoctor(@RequestBody doctorDto: DoctorDto): ResponseEntity<Long> {
         try {
+            var ownerId: String = ""
+            val doctorUser = userRepo.getUserByEmail(doctorDto.email)
+            if (doctorUser != null) {
+                ownerId = doctorUser.uuid
+            }
 
             val doctor = doctorRepo.save(
                 Doctor(
-                    ownerId = doctorDto.ownerId,
+                    ownerId = ownerId,
                     name = doctorDto.name,
+                    phone = doctorDto.phone,
                     description = doctorDto.description,
                     avatarInfo = doctorDto.avatarInfo,
                     location = locationRepo.save(Location(lat = doctorDto.location.lat, lon = doctorDto.location.lon)),
                     locationDetails = doctorDto.locationDetails
                 )
             )
-            val user = userRepo.getUserByUuid(doctorDto.ownerId)
+            val user = userRepo.getUserByUuid(doctorDto.requester)
             if (user != null && user.isAdmin) {
                 doctor.submitted = true
                 doctorRepo.save(doctor)
@@ -46,7 +52,7 @@ class DoctorController(
                         time = System.currentTimeMillis(),
                         type = AdminRequestType.DOCTOR,
                         doctor = doctor,
-                        requester = doctorDto.ownerId
+                        requester = doctorDto.requester
                     )
                 );
                 return ResponseEntity.ok().body(doctor.id)

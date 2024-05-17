@@ -4,7 +4,7 @@ public enum PostType {
     LOST,
     DANGER,
     DATING,
-    BAY,
+    BUY,
     SALE,
     MAINTENANCE,
 }

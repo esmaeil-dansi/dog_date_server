@@ -15,7 +15,7 @@ class Post(
     var ownerId: String = "",
     var title: String = "",
     var description: String = "",
-    var type: PostType = PostType.BAY,
+    var type: PostType = PostType.SALE,
     var fileUuid: String = "",
     var time: Long = 0,
     @ManyToOne

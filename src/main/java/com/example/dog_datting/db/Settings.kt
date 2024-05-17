@@ -8,5 +8,7 @@ data class Settings(
     @Id
     var id: Long = 0,
     var showAd: Boolean = true,
-    var adLoadingTimer: Int = 10
+    var adLoadingTimer: Int = 10,
+    var openAppId: String = "",
+    var bannerId: String = "",
 )

@@ -9,6 +9,7 @@ import com.example.dog_datting.models.UserRes
 import com.example.dog_datting.repo.*
 import com.example.dog_datting.services.EmailService
 import com.example.dog_datting.services.LocationService
+import com.example.dog_datting.utils.JwtUtil
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import org.springframework.http.ResponseEntity
@@ -23,10 +24,11 @@ class UserController(
     private val emailService: EmailService,
     private val locationRepo: LocationRepo,
     private val locationService: LocationService,
-    private val animalRepo: AnimalRepo
-) {
-    val logger: Logger = LogManager.getLogger(UserController::class.java)
+    private val animalRepo: AnimalRepo,
 
+    ) {
+    val logger: Logger = LogManager.getLogger(UserController::class.java)
+    private val jwtUtil: JwtUtil = JwtUtil()
 
     @PostMapping(path = ["/login"])
     @ResponseBody
@@ -44,7 +46,8 @@ class UserController(
                             id = user.uuid,
                             username = user.username,
                             name = user.firstname,
-                            isAdmin = user.isAdmin
+                            isAdmin = user.isAdmin,
+                            token = jwtUtil.generateToken(user.uuid)
                         )
                     )
                 } else {
@@ -92,7 +95,6 @@ class UserController(
             val u: User? = userRepo.getUserByEmail(loginByEmailDto.email)
 
             return if (u != null && u.uuid.isNotEmpty()) {
-                logger.info("user is exit.....")
                 ResponseEntity.badRequest().build()
             } else {
                 val code = kotlin.random.Random.nextInt(10000, 99999)
@@ -192,7 +194,7 @@ class UserController(
 
     @PostMapping(path = ["/sendVerificationCode"])
     @ResponseBody
-    fun sendVerificationCode(@RequestBody verificationDto: VerificationDto): ResponseEntity<String> {
+    fun sendVerificationCode(@RequestBody verificationDto: VerificationDto): ResponseEntity<VerificationRes?> {
         try {
             val u: User? = userRepo.getUserByEmail(verificationDto.user)
             logger.info("sendVerificationCode")
@@ -202,7 +204,7 @@ class UserController(
                     val uuid = UUID.randomUUID().toString();
                     u.uuid = uuid
                     userRepo.save(u)
-                    ResponseEntity.ok().body(u.uuid)
+                    ResponseEntity.ok().body(VerificationRes(uid = uuid, accessToken = jwtUtil.generateToken(uuid)))
                 }
                 ResponseEntity.badRequest().build()
             } else {

@@ -9,6 +9,7 @@ import com.example.dog_datting.repo.*
 import com.example.dog_datting.services.FirebaseMessagingService
 import com.example.dog_datting.services.PlaceService
 import com.example.dog_datting.services.ShopService
+import com.example.dog_datting.utils.JwtUtil
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import org.springframework.http.ResponseEntity
@@ -28,13 +29,16 @@ class AdminController(
 ) {
     val logger: Logger = LogManager.getLogger(MainController::class.java)
 
-    @PostMapping("/rejectRequest/{requestId}/{requester}")
+    private val jwtUtil: JwtUtil = JwtUtil()
+
+    @PostMapping("/rejectRequest/{requestId}")
     fun rejectRequest(
-        @PathVariable(value = "requester") requester: String,
-        @PathVariable(value = "requestId") requestId: Long
+        @PathVariable(value = "requestId") requestId: Long,
+        @RequestHeader("Authorization") authorizationHeader: String
     ): ResponseEntity<String> {
         try {
-            val user: User? = userRepo.getUserByUuid(requester)
+            val requester = jwtUtil.getUid(authorizationHeader)
+            val user: User? = userRepo.getUserByUuid(requester!!)
             if (user != null && user.isAdmin) {
                 val request = adminRequestsRepo.findById(requestId)
                 if (request.isPresent) {
@@ -59,25 +63,43 @@ class AdminController(
     }
 
     @PostMapping(path = ["/updateSettings"])
-    fun updateSetting(@RequestBody settingsDto: SettingsDto): ResponseEntity<String> {
+    fun updateSetting(
+        @RequestBody settingsDto: SettingsDto,
+        @RequestHeader("Authorization") authorizationHeader: String
+    ): ResponseEntity<String> {
         return try {
-            var record = settingRepo.findById(1)
-            if (record.isPresent) {
-                settingRepo.save(
-                    record.get().copy(showAd = settingsDto.showAd, adLoadingTimer = settingsDto.adLoadingTimer)
-                )
-
-            } else {
-                settingRepo.save(
-                    Settings(
-                        id = 1,
-                        showAd = settingsDto.showAd,
-                        adLoadingTimer = settingsDto.adLoadingTimer
+            val requester = jwtUtil.getUid(authorizationHeader)
+            val user = userRepo.getUserByUuid(requester!!)
+            if (user != null && user.isAdmin) {
+                var record = settingRepo.findById(1)
+                if (record.isPresent) {
+                    settingRepo.save(
+                        record.get().copy(
+                            showAd = settingsDto.showAd,
+                            openAppId = settingsDto.openAppId,
+                            bannerId = settingsDto.bannerId,
+                            adLoadingTimer = settingsDto.adLoadingTimer
+                        )
                     )
-                )
 
+                } else {
+                    settingRepo.save(
+                        Settings(
+                            id = 1,
+                            showAd = settingsDto.showAd,
+                            openAppId = settingsDto.openAppId,
+                            bannerId = settingsDto.bannerId,
+                            adLoadingTimer = settingsDto.adLoadingTimer
+                        )
+                    )
+
+                }
+                ResponseEntity.ok().build()
+            } else {
+                ResponseEntity.badRequest().build()
             }
-            ResponseEntity.ok().build()
+
+
         } catch (e: Exception) {
             logger.error(e.message)
             ResponseEntity.internalServerError().body(e.message)
@@ -89,28 +111,35 @@ class AdminController(
         return settingRepo.findById(1).get()
     }
 
-    @PostMapping("/submitRequest/{requestId}/{requester}")
+    @PostMapping("/submitRequest/{requestId}")
     fun submitRequest(
-        @PathVariable(value = "requester") requester: String,
-        @PathVariable(value = "requestId") requestId: Long
+        @PathVariable(value = "requestId") requestId: Long,
+        @RequestHeader("Authorization") authorizationHeader: String
     ): ResponseEntity<String> {
         try {
-            val user: User? = userRepo.getUserByUuid(requester)
+
+            val user: User? = userRepo.getUserByUuid(jwtUtil.getUid(authorizationHeader)!!)
             if (user != null && user.isAdmin) {
                 val request = adminRequestsRepo.findById(requestId)
                 if (request.isPresent) {
                     adminRequestsRepo.delete(request.get())
-                    return if (request.get().type == AdminRequestType.PLACE) {
-                        placeRepo.save(request.get().place!!.copy(submitted = true))
-                        sendNotificationToPlaceOwner(request.get().place!!.owner)
-                        ResponseEntity.ok().build()
-                    } else if (request.get().type == AdminRequestType.SHOP) {
-                        shopRepo.save(request.get().shop!!.copy(submitted = true))
-                        sendNotificationToShopOwner(request.get().shop!!.ownerId)
-                        ResponseEntity.ok().build()
-                    } else {
-                        doctorRepo.save(request.get().doctor!!.copy(submitted = true))
-                        ResponseEntity.ok().build()
+                    return when (request.get().type) {
+                        AdminRequestType.PLACE -> {
+                            placeRepo.save(request.get().place!!.copy(submitted = true))
+                            sendNotificationToPlaceOwner(request.get().place!!.owner)
+                            ResponseEntity.ok().build()
+                        }
+
+                        AdminRequestType.SHOP -> {
+                            shopRepo.save(request.get().shop!!.copy(submitted = true))
+                            sendNotificationToShopOwner(request.get().shop!!.ownerId)
+                            ResponseEntity.ok().build()
+                        }
+
+                        else -> {
+                            doctorRepo.save(request.get().doctor!!.copy(submitted = true))
+                            ResponseEntity.ok().build()
+                        }
                     }
                 }
 
@@ -161,9 +190,9 @@ class AdminController(
     }
 
     @GetMapping("/fetchRequests/{requester}")
-    fun fetchRequests(@PathVariable(value = "requester") requester: String): List<AdminRequestsRes>? {
+    fun fetchRequests(@RequestHeader("Authorization") authorizationHeader: String): List<AdminRequestsRes>? {
         try {
-            val user: User? = userRepo.getUserByUuid(requester)
+            val user: User? = userRepo.getUserByUuid(jwtUtil.getUid(authorizationHeader)!!)
             if (user != null && user.isAdmin) {
                 val res = adminRequestsRepo.findAll()
                 return res.map { e ->

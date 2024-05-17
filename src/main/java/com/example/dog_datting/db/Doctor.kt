@@ -23,5 +23,6 @@ data class Doctor(
     var locationInfo: Location? = null,
     var locationDetails: String = "",
     var submitted: Boolean = false,
+    var phone: String = ""
 
-    )
+)
