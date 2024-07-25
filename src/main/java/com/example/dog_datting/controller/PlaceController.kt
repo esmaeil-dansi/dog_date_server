@@ -42,6 +42,17 @@ class PlaceController(
         return resList
     }
 
+    @GetMapping("/deletePlace/{id}")
+    fun deletePlace(@PathVariable("id") id: Long): ResponseEntity<String> {
+        try {
+            placeRepo.deleteById(id)
+            return ResponseEntity.ok().build()
+        } catch (e: Exception) {
+            logger.error(e.message)
+            return ResponseEntity.internalServerError().body(e.message)
+        }
+    }
+
 
     @PostMapping(path = ["/createNewPlace"])
     @ResponseBody
@@ -58,6 +69,7 @@ class PlaceController(
             place.description = newPlaceDto.description
             place.name = newPlaceDto.name
             place.owner = owner
+            place.requester = newPlaceDto.requester
             place.location = location
             place.phone = newPlaceDto.phone
             place.palaceType = newPlaceDto.type

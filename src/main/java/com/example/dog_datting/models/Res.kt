@@ -36,7 +36,8 @@ data class PlaceRes(
     var location: Location = Location(),
     var locationInfo: Location? = null,
     var type: String = "",
-    var phone: String = ""
+    var phone: String = "",
+    var requester: String = ""
 )
 
 data class ShopRes(

@@ -16,6 +16,7 @@ class PlaceService(private val fileInfoRepo: FileInfoRepo) {
             placeRes.owner = place.owner
             placeRes.type = place.palaceType
             placeRes.phone = place.phone
+            placeRes.requester = place.requester
             placeRes.location =
                 com.example.dog_datting.models.Location(lat = place.location.lat, lon = place.location.lon)
             val info = fileInfoRepo.getByPacketId(place.fileUuid)

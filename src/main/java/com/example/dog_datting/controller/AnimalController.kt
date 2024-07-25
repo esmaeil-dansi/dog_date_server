@@ -54,7 +54,7 @@ class AnimalController(
                     uid = animalDto.uid
                 )
             )
-            if (res.lose){
+            if (res.lose) {
                 creteLostAnimalNotification(res)
             }
 
@@ -73,7 +73,7 @@ class AnimalController(
         try {
             val animal = animalRepo.findById(animalDto.id);
             if (animal.isPresent) {
-                val res = animalRepo.save(
+                val a = animalRepo.save(
                     animal.get().copy(
                         name = animalDto.name,
                         description = animalDto.description,
@@ -89,7 +89,9 @@ class AnimalController(
                     )
                 )
                 if (animalDto.lose) {
-                    creteLostAnimalNotification(res)
+                    creteLostAnimalNotification(a)
+                } else {
+                    deleteNotificationOnAnimal(a)
                 }
             }
 
@@ -140,6 +142,19 @@ class AnimalController(
 
     }
 
+    private fun deleteNotificationOnAnimal(animal: Animal) {
+        try {
+            notificationRepo.getByAnimalId(animalId = animal.id)?.forEach { s ->
+                run {
+                    notificationRepo.deleteById(s.id)
+                }
+            }
+        } catch (e: Exception) {
+            logger.error(e.message)
+        }
+
+    }
+
     @GetMapping("/getAnimal/{id}")
     @ResponseBody
     fun getAnimal(@PathVariable(value = "id") id: Long): Optional<Animal> {
@@ -151,10 +166,10 @@ class AnimalController(
     fun addHeath(
         @PathVariable(value = "animalUid") animalUid: String,
         @RequestBody heathDto: HeathDto
-    ): ResponseEntity<String> {
+    ): ResponseEntity<Long> {
         try {
-            heathRepo.save(Heath(animalUid = animalUid, body = heathDto.body, fileUuid = heathDto.fileUuid))
-            return ResponseEntity.ok().build()
+           var res =  heathRepo.save(Heath(animalUid = animalUid, body = heathDto.body, fileUuid = heathDto.fileUuid))
+            return ResponseEntity.ok().body(res.id)
         } catch (e: Exception) {
             logger.error(e.message)
         }
@@ -179,6 +194,18 @@ class AnimalController(
         }
         return null
 
+    }
+
+    @GetMapping("/deleteHeath/{id}")
+    fun deleteHeath(@PathVariable(value = "id") id: Long): ResponseEntity<String> {
+        try {
+            heathRepo.deleteById(id)
+            return ResponseEntity.ok().build()
+
+        } catch (e: Exception) {
+            logger.error(e.message)
+            return ResponseEntity.internalServerError().body(e.message)
+        }
     }
 
 

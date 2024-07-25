@@ -5,4 +5,5 @@ import org.springframework.data.jpa.repository.JpaRepository
 
 interface NotificationRepo : JpaRepository<Notifications, Long> {
     fun getByReceiver(receiver: String): List<Notifications>?
+    fun getByAnimalId(animalId: Long): List<Notifications>?
 }

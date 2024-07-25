@@ -18,7 +18,7 @@ class SecurityConfig  {
      fun configure(http: HttpSecurity):SecurityFilterChain {
         http.csrf().disable()
             .authorizeRequests()
-            .antMatchers("/login", "/sendVerificationCode", "/recoveryEmail/", "/recovery","/singingByEmail")
+            .antMatchers("/login", "/sendVerificationCode", "/recoveryEmail/", "/recovery","/singingByEmail","/privacy","/terms_of_use")
             .permitAll() // Exclude login and token endpoints from authentication
             .anyRequest().authenticated()
         http.addFilterBefore(JwtRequestFilter(), AnonymousAuthenticationFilter::class.java)
